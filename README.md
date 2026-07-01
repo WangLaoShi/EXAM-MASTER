@@ -65,6 +65,14 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
 - **任务队列**: celery 5.3.4 (可选)
 - **缓存**: redis 5.0.1 (可选)
 
+### 📖 文档
+
+完整文档索引见 [docs/README.md](docs/README.md)。常用入口：
+
+- 后端 API：[backend/docs/API_DOCUMENTATION.md](backend/docs/API_DOCUMENTATION.md)
+- 快速启动：[backend/docs/QUICKSTART.md](backend/docs/QUICKSTART.md)
+- 发布运维：[docs/guides/](docs/guides/)
+
 ### 🚀 快速开始
 
 #### 环境要求
@@ -189,12 +197,12 @@ backend/
 ├── prompt_templates/          # AI Prompt模板
 │   ├── system/               # 系统模板
 │   └── user/                 # 用户模板
-├── docs/                      # 项目文档
-│   ├── API_USAGE_REPORT.md   # API使用报告
-│   └── NEW_ARCHITECTURE.md   # 新架构设计
+├── docs/                      # 后端功能文档
+│   ├── API_DOCUMENTATION.md  # API 概览
+│   ├── QUICKSTART.md         # 快速启动
+│   └── ...                   # 更多见 docs/README.md
 ├── tests/                     # 测试文件
-│   ├── test_all_apis.py      # API测试
-│   └── TEST_REPORT.md        # 测试报告
+│   └── test_all_apis.py      # API测试
 ├── requirements.txt           # Python依赖
 ├── init_database_v2.py        # 数据库初始化脚本
 ├── init_admin.py              # 管理员初始化脚本

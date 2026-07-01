@@ -20,7 +20,7 @@ email-validator==2.1.0
 # File handling
 aiofiles==23.2.1
 python-magic==0.4.27
-pillow==10.1.0
+# pillow==10.1.0
 
 # Data processing
 pandas==2.1.3
