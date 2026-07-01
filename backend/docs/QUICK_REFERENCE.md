@@ -40,6 +40,5 @@ Base URL: https://api.chienkjapi.mom/v1
 
 ## 📖 完整文档
 
-- `AI_TESTING_FEATURES.md` - 功能文档
-- `CONSOLE_TEST_401_FIX.md` - 问题诊断
-- `SESSION_SUMMARY.md` - 工作总结
+- [AI_TESTING_FEATURES.md](AI_TESTING_FEATURES.md) — 功能文档
+- [文档索引](../../docs/README.md) — 全部文档入口
