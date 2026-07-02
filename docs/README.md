@@ -6,7 +6,8 @@
 |------|------|
 | [README.md](../README.md) | 项目主文档 |
 | [backend/README.md](../backend/README.md) | 后端快速入门 |
-| [flutter_app/README.md](../flutter_app/README.md) | Flutter 客户端 |
+| [flutter_app/README.md](../flutter_app/README.md) | Flutter 客户端架构 |
+| [guides/FLUTTER_WEB_GUIDE.md](guides/FLUTTER_WEB_GUIDE.md) | **学员 Web 答题端**（环境、构建、`/app-web`） |
 | [backend/docs/QUICKSTART.md](../backend/docs/QUICKSTART.md) | AI 助手与管理后台快速启动 |
 | [backend/docs/API_DOCUMENTATION.md](../backend/docs/API_DOCUMENTATION.md) | API 概览 |
 | [backend/docs/API_ENDPOINTS_REFERENCE.md](../backend/docs/API_ENDPOINTS_REFERENCE.md) | API 端点完整参考 |
@@ -24,6 +25,7 @@
 
 ### 运维与发布 (`docs/guides/`)
 
+- [FLUTTER_WEB_GUIDE.md](guides/FLUTTER_WEB_GUIDE.md) — **Flutter Web 答题端**（环境安装、构建部署、`/app-web`）
 - [ANDROID_SIGNING_GUIDE.md](guides/ANDROID_SIGNING_GUIDE.md) — Android 签名
 - [CERTIFICATE_MAINTENANCE_GUIDE.md](guides/CERTIFICATE_MAINTENANCE_GUIDE.md) — 证书维护
 - [SECURITY_CHECKLIST.md](guides/SECURITY_CHECKLIST.md) — 提交前安全检查

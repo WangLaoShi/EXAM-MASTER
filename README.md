@@ -71,6 +71,7 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
 
 - 后端 API：[backend/docs/API_DOCUMENTATION.md](backend/docs/API_DOCUMENTATION.md)
 - 快速启动：[backend/docs/QUICKSTART.md](backend/docs/QUICKSTART.md)
+- **学员 Web 答题端**：[docs/guides/FLUTTER_WEB_GUIDE.md](docs/guides/FLUTTER_WEB_GUIDE.md)
 - 发布运维：[docs/guides/](docs/guides/)
 
 ### 🚀 快速开始
@@ -135,10 +136,24 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
    python init_admin.py
    ```
 
-7. **访问 API 文档**
+7. **访问服务**
    - Swagger UI: http://localhost:8000/api/docs
    - ReDoc: http://localhost:8000/api/redoc
    - 管理后台: http://localhost:8000/admin
+   - **学员 Web 答题端**: http://localhost:8000/app-web（需先构建 Flutter Web，见下方）
+
+8. **学员 Web 答题端（可选）**
+
+   用于浏览器刷题/练习，详见 [docs/guides/FLUTTER_WEB_GUIDE.md](docs/guides/FLUTTER_WEB_GUIDE.md)。
+
+   ```powershell
+   cd flutter_app
+   .\scripts\setup_flutter_env.ps1   # 首次需 git clone tools/flutter，见指南
+   .\scripts\build_web.ps1
+   cd ..\backend
+   python run.py
+   # 打开 http://127.0.0.1:8000/app-web ，账号 admin / admin123
+   ```
 
 ### 📂 项目结构
 

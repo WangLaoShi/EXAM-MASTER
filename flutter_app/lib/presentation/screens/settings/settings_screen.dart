@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../routes/app_router.dart';
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -16,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('修改密码'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.pushNamed(context, '/change-password');
+              Navigator.pushNamed(context, AppRoutes.changePassword);
             },
           ),
           const Divider(),

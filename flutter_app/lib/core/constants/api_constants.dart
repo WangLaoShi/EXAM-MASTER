@@ -1,12 +1,20 @@
-/// API Constants
-/// 定义所有API端点和配置
+/// API 端点与后端环境配置
+///
+/// 当前 Dio 默认 baseUrl 为 [apiBaseUrl]（`/api/v1`）。
+/// 本地开发可将 [useProduction] 设为 false，并把 [developmentUrl] 改为 `http://10.0.2.2:8000`（Android 模拟器）或本机 IP。
+///
+/// Web 部署：编译产物输出到 `backend/web_app/`，由后端挂载在 `/app-web`。
 class ApiConstants {
-  // Environment configuration
-  static const bool useProduction = true; // 切换为 true 使用生产环境，false 使用本地开发环境
+  // 本地 Web/桌面调试：false + developmentUrl
+  // 生产构建：flutter build web --dart-define=PRODUCTION=true
+  static const bool useProduction = bool.fromEnvironment('PRODUCTION', defaultValue: false);
 
   // Base URLs
   static const String productionUrl = 'https://exam.shaynechen.tech';
-  static const String developmentUrl = 'https://exam.shaynechen.tech';
+  static const String developmentUrl = String.fromEnvironment(
+    'API_BASE',
+    defaultValue: 'http://127.0.0.1:8000',
+  );
 
   // Base URL - 根据环境切换
   static String get baseUrl => useProduction ? productionUrl : developmentUrl;

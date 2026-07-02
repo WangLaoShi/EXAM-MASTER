@@ -129,8 +129,34 @@ python run.py
 - Admin Panel: `http://localhost:8000/admin`
 - Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
+- **学员 Web 答题端（Flutter Web）**: `http://localhost:8000/app-web`
 - **Integration API 文档**: [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md)
 - **Integration API Key 管理**: `http://localhost:8000/admin/api-keys`
+
+## 学员 Web 答题端（Flutter Web）
+
+完整步骤见 **[docs/guides/FLUTTER_WEB_GUIDE.md](../docs/guides/FLUTTER_WEB_GUIDE.md)**。
+
+**快速联调：**
+
+```powershell
+# 1. 构建并部署到 backend/web_app/
+cd flutter_app
+.\scripts\setup_flutter_env.ps1
+.\scripts\build_web.ps1
+
+# 2. 启动后端
+cd ..\backend
+python run.py
+
+# 3. 浏览器打开
+# http://127.0.0.1:8000/app-web
+# 默认账号 admin / admin123
+```
+
+热重载开发：`flutter_app\scripts\run_web_dev.ps1`（Chrome `127.0.0.1:8080`，需后端已启动）。
+
+Flutter SDK 默认路径：`D:\EXAM-MASTER\tools\flutter`（见 `.gitignore`，需本地 `git clone` 或自行安装 Flutter）。
 
 ## API Endpoints
 

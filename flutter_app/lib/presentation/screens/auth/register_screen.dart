@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/validators.dart';
+import '../../../routes/app_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/loading_button.dart';
@@ -61,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (success) {
       // Navigate to home screen
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else {
       // Show error message
       if (authProvider.errorMessage != null) {
