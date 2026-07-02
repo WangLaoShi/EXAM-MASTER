@@ -1,4 +1,5 @@
 import { Alert, Chip } from '@heroui/react'
+import { CompositeQuestion } from '@/components/question/CompositeQuestion'
 import { EssayAnswer } from '@/components/question/EssayAnswer'
 import { FillBlank } from '@/components/question/FillBlank'
 import { JudgeChoice } from '@/components/question/JudgeChoice'
@@ -6,7 +7,7 @@ import { MultipleChoice } from '@/components/question/MultipleChoice'
 import { RichContent } from '@/components/question/RichContent'
 import { SingleChoice } from '@/components/question/SingleChoice'
 import type { AnswerResult } from '@/types/practice'
-import type { PracticeQuestion, UserAnswer } from '@/types/question'
+import type { PracticeQuestion, UserAnswer, CompositeUserAnswer } from '@/types/question'
 
 interface QuestionRendererProps {
   question: PracticeQuestion
@@ -113,7 +114,12 @@ export function QuestionRenderer({
         ) : null}
 
         {question.type === 'composite' ? (
-          <Alert status="warning">复合题暂未实现，请使用 Flutter 客户端或后续版本。</Alert>
+          <CompositeQuestion
+            question={question}
+            disabled={disabled}
+            value={(value as CompositeUserAnswer | null) ?? null}
+            onChange={(compositeValue) => onChange(compositeValue)}
+          />
         ) : null}
       </div>
 

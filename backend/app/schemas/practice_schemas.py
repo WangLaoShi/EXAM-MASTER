@@ -142,6 +142,7 @@ class PracticeQuestionResponse(BaseModel):
     has_image: bool
     has_video: bool
     has_audio: bool
+    meta_data: Optional[Dict[str, Any]] = None
     created_at: datetime
 
     class Config:

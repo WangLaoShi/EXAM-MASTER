@@ -20,6 +20,7 @@ from app.models.user_practice import (
 )
 from app.models.user_statistics import UserBankStatistics
 from app.models.question_models_v2 import QuestionV2, QuestionType
+from app.utils.composite_question import get_practice_meta_data, grade_composite_answer
 from app.models.activation import UserBankAccess
 from app.schemas.practice_schemas import (
     PracticeSessionCreate,
@@ -635,6 +636,8 @@ async def submit_answer(
             else:
                 # 如果没有参考答案或关键词，只要有作答就给分
                 is_correct = len(user_text) > 0
+    elif question.type == QuestionType.composite:
+        is_correct, correct_answer = grade_composite_answer(question, user_answer)
 
     # 创建答题记录
     # 序列化选项为字典列表
@@ -840,9 +843,10 @@ async def get_current_question(
         options=question.options,
         difficulty=question.difficulty.value if question.difficulty else None,
         tags=question.tags,
-        has_image=question.has_image,
-        has_video=question.has_video,
-        has_audio=question.has_audio,
+        has_image=getattr(question, "has_images", False) or getattr(question, "has_image", False),
+        has_video=question.has_video or False,
+        has_audio=question.has_audio or False,
+        meta_data=get_practice_meta_data(question),
         created_at=question.created_at,
         current_index=session.current_index + 1,  # 从1开始
         total_questions=session.total_questions,

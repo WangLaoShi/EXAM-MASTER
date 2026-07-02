@@ -19,6 +19,7 @@ import { ExamLayout } from '@/components/layout/ExamLayout'
 import { QuestionRenderer } from '@/components/question/QuestionRenderer'
 import { useExamStore } from '@/stores/examStore'
 import type { UserAnswer } from '@/types/question'
+import { isAnswerComplete } from '@/utils/compositeQuestion'
 
 export function ExamRoomPage() {
   const { sessionId = '' } = useParams()
@@ -131,7 +132,9 @@ export function ExamRoomPage() {
 
   const session = sessionQuery.data
   const bankTitle = bankQuery.data?.name ?? session?.bank_id ?? '考试'
-  const canSubmit = Boolean(draftAnswer && currentQuestion && !submitMutation.isPending)
+  const canSubmit = Boolean(
+    currentQuestion && draftAnswer && isAnswerComplete(currentQuestion, draftAnswer) && !submitMutation.isPending,
+  )
 
   const unansweredCount = useMemo(() => {
     if (!session) return 0

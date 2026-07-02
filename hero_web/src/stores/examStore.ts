@@ -62,7 +62,11 @@ export const useExamStore = create<ExamState>((set, get) => ({
   setCurrentQuestion: (question) =>
     set({
       currentQuestion: question,
-      draftAnswer: (question?.previous_answer as UserAnswer | null | undefined) ?? null,
+      draftAnswer: question?.previous_answer
+        ? (question.previous_answer as UserAnswer)
+        : question?.type === 'composite'
+          ? ({ sub_answers: {} } as UserAnswer)
+          : null,
       lastResult: null,
       questionStartedAt: Date.now(),
     }),

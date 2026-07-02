@@ -39,10 +39,16 @@ export interface PracticeQuestion {
   is_favorite: boolean
   is_wrong_before: boolean
   previous_answer?: Record<string, unknown> | null
+  meta_data?: Record<string, unknown> | null
 }
 
-export type UserAnswer =
+export type LeafUserAnswer =
   | { answer: string }
   | { answers: string[] }
   | { answer: boolean }
-  | { answers: string[] }
+
+export interface CompositeUserAnswer {
+  sub_answers: Record<string, LeafUserAnswer>
+}
+
+export type UserAnswer = LeafUserAnswer | CompositeUserAnswer
