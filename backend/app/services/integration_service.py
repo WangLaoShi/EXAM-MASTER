@@ -1,5 +1,14 @@
 """
-Integration API business logic
+Integration API 业务层
+
+职责：
+- API Key / 审计日志（main 库）
+- 题目 CRUD、批量 upsert（qbank 库）
+- CSV/JSON/ZIP 导入（含高性能批量模式）
+
+性能要点（881 题导入）：
+- `_bulk_import_mode`：预加载 external_id、每 100 题 commit 一次、结束只 sync 文件一次
+- `_upsert_import_row`：绕过通用 upsert 的逐题查库/双 commit
 """
 
 import csv
@@ -54,7 +63,14 @@ class IntegrationService:
 
     @contextmanager
     def _bulk_import_mode(self, bank_id: str):
-        """导入专用：预加载 external_id、批量 commit、结束后再 sync 文件一次。"""
+        """
+        批量导入上下文（性能关键路径）。
+
+        1. 一次性加载题库内已有 question_code → 内存 dict，避免 881 次 SELECT
+        2. 导入期间 defer 文件 sync，禁止逐题 commit
+        3. 每 IMPORT_BATCH_COMMIT_SIZE 题 commit 一次
+        4. 退出时用 joinedload 一次性 sync 紧凑 JSON
+        """
         bank = self.get_bank_or_404(bank_id)
         existing_rows = self.qbank_db.query(QuestionV2).filter(
             QuestionV2.bank_id == bank_id,
@@ -78,7 +94,7 @@ class IntegrationService:
             self._existing_by_code = {}
             self._import_bank = None
             self._import_pending_rows = 0
-            self.qbank_service._sync_questions_to_file(bank_id)
+            self.qbank_service._sync_questions_to_file(bank_id, compact=True)
 
     def _maybe_batch_commit(self) -> None:
         self._import_pending_rows += 1
@@ -127,6 +143,7 @@ class IntegrationService:
         item: IntegrationQuestionCreate,
         result: IntegrationImportResult,
     ) -> None:
+        """导入专用 upsert：仅 flush，不逐题 commit/sync。"""
         options = self._options_to_dicts(item.options)
         qtype = QuestionType(item.type.value)
         difficulty = (

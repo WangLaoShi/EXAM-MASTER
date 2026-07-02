@@ -1,7 +1,13 @@
-"""Serialize QuestionV2 ORM objects for Integration API responses."""
+"""Serialize ORM objects for Integration API responses."""
 
 from app.models.question_models_v2 import QuestionV2
-from app.schemas.qbank_schemas_v2 import QuestionResponse, OptionData, QuestionTypeEnum, DifficultyEnum
+from app.schemas.qbank_schemas_v2 import (
+    QuestionResponse,
+    question_bank_to_response as to_bank_response,
+    OptionData,
+    QuestionTypeEnum,
+    DifficultyEnum,
+)
 
 
 def to_question_response(question: QuestionV2) -> QuestionResponse:

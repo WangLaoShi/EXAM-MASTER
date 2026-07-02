@@ -14,11 +14,18 @@ import io
 import json
 import os
 import sys
+import time
 import zipfile
 from pathlib import Path
 
 import pytest
 import requests
+
+from tests.api_timing import (
+    LIMIT_LARGE_IMPORT,
+    assert_response_time,
+    time_limit_for_operation,
+)
 
 BASE_URL = os.environ.get("INTEGRATION_BASE_URL", "http://localhost:8000")
 API_KEY = os.environ.get("INTEGRATION_API_KEY", "")
@@ -36,6 +43,34 @@ JSON_HEADERS = {**HEADERS, "Content-Type": "application/json"}
 
 def _url(path: str) -> str:
     return f"{BASE_URL}{path}"
+
+
+def _timed_request(method: str, path: str, max_seconds: float | None = None, **kwargs):
+    """发起 HTTP 请求并断言响应时间在 OpenAPI 场景阈值内。"""
+    limit = max_seconds or time_limit_for_operation(method, path)
+    kwargs.pop("max_seconds", None)
+    kwargs.setdefault("timeout", limit + 10)
+    start = time.perf_counter()
+    response = requests.request(method, _url(path), **kwargs)
+    elapsed = time.perf_counter() - start
+    assert_response_time(elapsed, limit, f"{method} {path}")
+    return response
+
+
+def _get(path: str, **kwargs):
+    return _timed_request("GET", path, **kwargs)
+
+
+def _post(path: str, **kwargs):
+    return _timed_request("POST", path, **kwargs)
+
+
+def _put(path: str, **kwargs):
+    return _timed_request("PUT", path, **kwargs)
+
+
+def _delete(path: str, **kwargs):
+    return _timed_request("DELETE", path, **kwargs)
 
 
 def _detail(response) -> dict:
@@ -90,11 +125,11 @@ def bank_id():
         "category": "integration-test",
         "is_public": False,
     }
-    r = requests.post(_url("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
+    r = _post("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
     assert r.status_code == 201, f"创建题库失败: {r.status_code} {r.text}"
     bid = r.json()["id"]
     yield bid
-    requests.delete(_url(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=30)
+    _delete(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=30)
 
 
 @pytest.fixture(scope="module")
@@ -106,18 +141,18 @@ def large_bank_id():
         "category": "integration-test-large",
         "is_public": False,
     }
-    r = requests.post(_url("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
+    r = _post("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
     assert r.status_code == 201, r.text
     bid = r.json()["id"]
     yield bid
-    requests.delete(_url(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=120)
+    _delete(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=120)
 
 
 class TestIntegrationHealth:
     """TC-01: API Key 认证与健康检查"""
 
     def test_health_with_bearer(self):
-        r = requests.get(_url("/api/integration/health"), headers=HEADERS, timeout=10)
+        r = _get("/api/integration/health"), headers=HEADERS, timeout=10)
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "ok"
@@ -126,24 +161,20 @@ class TestIntegrationHealth:
         print(f"  Key: {data['key_name']}, Scopes: {data['scopes']}")
 
     def test_health_with_x_api_key_header(self):
-        r = requests.get(
-            _url("/api/integration/health"),
-            headers={"X-API-Key": API_KEY},
+        r = _get("/api/integration/health",headers={"X-API-Key": API_KEY},
             timeout=10,
         )
         assert r.status_code == 200
 
     def test_missing_key_rejected(self):
-        r = requests.get(_url("/api/integration/health"), timeout=10)
+        r = _get("/api/integration/health", timeout=10)
         assert r.status_code == 401
         detail = _detail(r)
         assert detail["code"] == "AUTH_MISSING"
         assert "suggestion" in detail
 
     def test_invalid_key_rejected(self):
-        r = requests.get(
-            _url("/api/integration/health"),
-            headers={"Authorization": "Bearer em_live_invalid"},
+        r = _get("/api/integration/health",headers={"Authorization": "Bearer em_live_invalid"},
             timeout=10,
         )
         assert r.status_code == 401
@@ -156,9 +187,7 @@ class TestIntegrationErrors:
     """TC-E01 ~ TC-E10: 常见错误场景"""
 
     def test_bank_not_found(self):
-        r = requests.get(
-            _url("/api/integration/banks/non-existent-bank-id"),
-            headers=HEADERS,
+        r = _get("/api/integration/banks/non-existent-bank-id",headers=HEADERS,
             timeout=10,
         )
         assert r.status_code == 404
@@ -166,9 +195,7 @@ class TestIntegrationErrors:
         assert detail["code"] == "BANK_NOT_FOUND"
 
     def test_question_not_found_by_external_id(self, bank_id):
-        r = requests.get(
-            _url("/api/integration/questions/by-external-id/does-not-exist"),
-            params={"bank_id": bank_id},
+        r = _get("/api/integration/questions/by-external-id/does-not-exist",params={"bank_id": bank_id},
             headers=HEADERS,
             timeout=10,
         )
@@ -177,15 +204,11 @@ class TestIntegrationErrors:
 
     def test_duplicate_external_id_on_create(self, bank_id):
         q = _load_sample_rows(1)[0]
-        requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/upsert"),
-            json=q,
+        _post(f"/api/integration/banks/{bank_id}/questions/upsert",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions"),
-            json=q,
+        r = _post(f"/api/integration/banks/{bank_id}/questions",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -195,9 +218,7 @@ class TestIntegrationErrors:
         assert detail.get("external_id") == q["external_id"]
 
     def test_upsert_requires_external_id(self, bank_id):
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/upsert"),
-            json={"stem": "无 external_id", "type": "single"},
+        r = _post(f"/api/integration/banks/{bank_id}/questions/upsert",json={"stem": "无 external_id", "type": "single"},
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -206,9 +227,7 @@ class TestIntegrationErrors:
 
     def test_import_empty_csv(self, bank_id):
         buf = io.BytesIO(b"")
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/csv"),
-            headers=HEADERS,
+        r = _post(f"/api/integration/banks/{bank_id}/import/csv",headers=HEADERS,
             files={"file": ("empty.csv", buf, "text/csv")},
             timeout=30,
         )
@@ -217,9 +236,7 @@ class TestIntegrationErrors:
 
     def test_import_wrong_extension(self, bank_id):
         buf = io.BytesIO(b"not csv")
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/csv"),
-            headers=HEADERS,
+        r = _post(f"/api/integration/banks/{bank_id}/import/csv",headers=HEADERS,
             files={"file": ("data.txt", buf, "text/plain")},
             timeout=30,
         )
@@ -228,9 +245,7 @@ class TestIntegrationErrors:
 
     def test_import_invalid_zip(self, bank_id):
         buf = io.BytesIO(b"not a zip file")
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/zip"),
-            headers=HEADERS,
+        r = _post(f"/api/integration/banks/{bank_id}/import/zip",headers=HEADERS,
             files={"file": ("bad.zip", buf, "application/zip")},
             timeout=30,
         )
@@ -242,9 +257,7 @@ class TestIntegrationErrors:
         with zipfile.ZipFile(buf, "w"):
             pass
         buf.seek(0)
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/zip"),
-            headers=HEADERS,
+        r = _post(f"/api/integration/banks/{bank_id}/import/zip",headers=HEADERS,
             files={"file": ("empty.zip", buf, "application/zip")},
             timeout=30,
         )
@@ -253,9 +266,7 @@ class TestIntegrationErrors:
 
     def test_import_invalid_json(self, bank_id):
         buf = io.BytesIO(b"{not json")
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/json"),
-            headers=HEADERS,
+        r = _post(f"/api/integration/banks/{bank_id}/import/json",headers=HEADERS,
             files={"file": ("bad.json", buf, "application/json")},
             timeout=30,
         )
@@ -266,9 +277,7 @@ class TestIntegrationErrors:
         """成功导入响应应包含 message / duration_ms 等字段"""
         assert SAMPLE_CSV.exists()
         with open(SAMPLE_CSV, "rb") as f:
-            r = requests.post(
-                _url(f"/api/integration/banks/{bank_id}/import/csv"),
-                params={"external_id_prefix": "py-sample"},
+            r = _post(f"/api/integration/banks/{bank_id}/import/csv",params={"external_id_prefix": "py-sample"},
                 headers=HEADERS,
                 files={"file": ("sample_questions.csv", f, "text/csv")},
                 timeout=60,
@@ -287,22 +296,20 @@ class TestIntegrationBanks:
     """TC-02 ~ TC-06: 题库 CRUD"""
 
     def test_list_banks(self, bank_id):
-        r = requests.get(_url("/api/integration/banks"), headers=HEADERS, timeout=10)
+        r = _get("/api/integration/banks"), headers=HEADERS, timeout=10)
         assert r.status_code == 200
         banks = r.json()
         assert isinstance(banks, list)
         assert any(b["id"] == bank_id for b in banks)
 
     def test_get_bank(self, bank_id):
-        r = requests.get(_url(f"/api/integration/banks/{bank_id}"), headers=HEADERS, timeout=10)
+        r = _get(f"/api/integration/banks/{bank_id}"), headers=HEADERS, timeout=10)
         assert r.status_code == 200
         assert r.json()["id"] == bank_id
         assert "Integration API" in r.json()["name"]
 
     def test_update_bank(self, bank_id):
-        r = requests.put(
-            _url(f"/api/integration/banks/{bank_id}"),
-            json={"description": "已更新描述 - integration test"},
+        r = _put(f"/api/integration/banks/{bank_id}",json={"description": "已更新描述 - integration test"},
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -317,15 +324,11 @@ class TestIntegrationQuestions:
         """TC-07: 单题创建 — sample_questions.csv 第1题"""
         q = _load_sample_rows(1)[0]
         # 先 upsert 确保存在，再测 create 重复会 409（见 TestIntegrationErrors）
-        requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/upsert"),
-            json=q,
+        _post(f"/api/integration/banks/{bank_id}/questions/upsert",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions"),
-            json=q,
+        r = _post(f"/api/integration/banks/{bank_id}/questions",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -334,9 +337,7 @@ class TestIntegrationQuestions:
     def test_get_question_by_external_id(self, bank_id):
         """TC-08: 按 external_id 查询"""
         external_id = "py-sample-1"
-        r = requests.get(
-            _url(f"/api/integration/questions/by-external-id/{external_id}"),
-            params={"bank_id": bank_id},
+        r = _get(f"/api/integration/questions/by-external-id/{external_id}",params={"bank_id": bank_id},
             headers=HEADERS,
             timeout=10,
         )
@@ -346,16 +347,12 @@ class TestIntegrationQuestions:
     def test_update_question(self, bank_id):
         """TC-09: 修改题目"""
         external_id = "py-sample-1"
-        get_r = requests.get(
-            _url(f"/api/integration/questions/by-external-id/{external_id}"),
-            params={"bank_id": bank_id},
+        get_r = _get(f"/api/integration/questions/by-external-id/{external_id}",params={"bank_id": bank_id},
             headers=HEADERS,
             timeout=10,
         )
         qid = get_r.json()["id"]
-        r = requests.put(
-            _url(f"/api/integration/questions/{qid}"),
-            json={"explanation": "【已更新】Python是一种解释型的高级编程语言"},
+        r = _put(f"/api/integration/questions/{qid}",json={"explanation": "【已更新】Python是一种解释型的高级编程语言"},
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -365,9 +362,7 @@ class TestIntegrationQuestions:
     def test_batch_create_questions(self, bank_id):
         """TC-10: 批量创建 — csv 第2~5题"""
         questions = _load_sample_rows(5)[1:5]
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/batch"),
-            json={"upsert": True, "questions": questions},
+        r = _post(f"/api/integration/banks/{bank_id}/questions/batch",json={"upsert": True, "questions": questions},
             headers=JSON_HEADERS,
             timeout=30,
         )
@@ -382,9 +377,7 @@ class TestIntegrationQuestions:
         q1 = _load_sample_rows(1)[0]
         q1["explanation"] = "【upsert更新】解释型语言"
         q6 = _load_sample_rows(6)[5]
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/batch"),
-            json={"upsert": True, "questions": [q1, q6]},
+        r = _post(f"/api/integration/banks/{bank_id}/questions/batch",json={"upsert": True, "questions": [q1, q6]},
             headers=JSON_HEADERS,
             timeout=30,
         )
@@ -396,9 +389,7 @@ class TestIntegrationQuestions:
     def test_upsert_single(self, bank_id):
         """TC-12: 单条 upsert"""
         q = _load_sample_rows(7)[6]
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/upsert"),
-            json=q,
+        r = _post(f"/api/integration/banks/{bank_id}/questions/upsert",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
@@ -407,9 +398,7 @@ class TestIntegrationQuestions:
 
     def test_list_questions(self, bank_id):
         """TC-13: 题目列表"""
-        r = requests.get(
-            _url(f"/api/integration/banks/{bank_id}/questions"),
-            params={"limit": 100},
+        r = _get(f"/api/integration/banks/{bank_id}/questions",params={"limit": 100},
             headers=HEADERS,
             timeout=10,
         )
@@ -421,22 +410,16 @@ class TestIntegrationQuestions:
         """TC-14: 删除题目"""
         external_id = "py-sample-10"
         q = _load_sample_rows(10)[9]
-        requests.post(
-            _url(f"/api/integration/banks/{bank_id}/questions/upsert"),
-            json=q,
+        _post(f"/api/integration/banks/{bank_id}/questions/upsert",json=q,
             headers=JSON_HEADERS,
             timeout=10,
         )
-        get_r = requests.get(
-            _url(f"/api/integration/questions/by-external-id/{external_id}"),
-            params={"bank_id": bank_id},
+        get_r = _get(f"/api/integration/questions/by-external-id/{external_id}",params={"bank_id": bank_id},
             headers=HEADERS,
             timeout=10,
         )
         qid = get_r.json()["id"]
-        r = requests.delete(
-            _url(f"/api/integration/questions/{qid}"),
-            headers=HEADERS,
+        r = _delete(f"/api/integration/questions/{qid}",headers=HEADERS,
             timeout=10,
         )
         assert r.status_code == 200
@@ -449,9 +432,7 @@ class TestIntegrationImport:
         """TC-17: ZIP 压缩包导入 — sample_questions.zip（内含 CSV）"""
         assert SAMPLE_ZIP.exists(), f"缺少测试文件: {SAMPLE_ZIP}"
         with open(SAMPLE_ZIP, "rb") as f:
-            r = requests.post(
-                _url(f"/api/integration/banks/{bank_id}/import/zip"),
-                params={"external_id_prefix": "py-sample"},
+            r = _post(f"/api/integration/banks/{bank_id}/import/zip",params={"external_id_prefix": "py-sample"},
                 headers=HEADERS,
                 files={"file": ("sample_questions.zip", f, "application/zip")},
                 timeout=60,
@@ -463,9 +444,7 @@ class TestIntegrationImport:
         assert result["success"] is True
         print(f"  ZIP 导入: {result['message']}")
 
-        check = requests.get(
-            _url("/api/integration/questions/by-external-id/py-sample-1"),
-            params={"bank_id": bank_id},
+        check = _get("/api/integration/questions/by-external-id/py-sample-1",params={"bank_id": bank_id},
             headers=HEADERS,
             timeout=10,
         )
@@ -475,9 +454,7 @@ class TestIntegrationImport:
         """TC-15: 直接导入 sample_questions.csv（中文列名）"""
         assert SAMPLE_CSV.exists()
         with open(SAMPLE_CSV, "rb") as f:
-            r = requests.post(
-                _url(f"/api/integration/banks/{bank_id}/import/csv"),
-                params={"external_id_prefix": "py-sample"},
+            r = _post(f"/api/integration/banks/{bank_id}/import/csv",params={"external_id_prefix": "py-sample"},
                 headers=HEADERS,
                 files={"file": ("sample_questions.csv", f, "text/csv")},
                 timeout=60,
@@ -493,9 +470,7 @@ class TestIntegrationImport:
         questions = _load_sample_rows(3)
         payload = {"questions": questions}
         buf = io.BytesIO(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
-        r = requests.post(
-            _url(f"/api/integration/banks/{bank_id}/import/json"),
-            params={"external_id_prefix": "py-sample"},
+        r = _post(f"/api/integration/banks/{bank_id}/import/json",params={"external_id_prefix": "py-sample"},
             headers=HEADERS,
             files={"file": ("questions.json", buf, "application/json")},
             timeout=30,
@@ -517,12 +492,12 @@ class TestIntegrationLargeImport:
         """TC-L01: 881 题 CSV 导入"""
         assert expected_rows >= 880, f"questions.csv 行数异常: {expected_rows}"
         with open(LARGE_CSV, "rb") as f:
-            r = requests.post(
-                _url(f"/api/integration/banks/{large_bank_id}/import/csv"),
+            r = _post(
+                f"/api/integration/banks/{large_bank_id}/import/csv",
                 params={"external_id_prefix": "maoshi"},
                 headers=HEADERS,
                 files={"file": ("questions.csv", f, "text/csv")},
-                timeout=600,
+                max_seconds=LIMIT_LARGE_IMPORT,
             )
         assert r.status_code == 200, r.text[:500]
         result = r.json()
@@ -530,11 +505,10 @@ class TestIntegrationLargeImport:
         assert result["imported_count"] == expected_rows, result
         assert result["total_rows"] == expected_rows
         assert result["success"] is True
+        assert result["duration_ms"] < LIMIT_LARGE_IMPORT * 1000, result
         print(f"  大 CSV: {result['message']}, duration={result['duration_ms']}ms")
 
-        check = requests.get(
-            _url("/api/integration/questions/by-external-id/maoshi-1"),
-            params={"bank_id": large_bank_id},
+        check = _get("/api/integration/questions/by-external-id/maoshi-1",params={"bank_id": large_bank_id},
             headers=HEADERS,
             timeout=10,
         )
@@ -544,12 +518,12 @@ class TestIntegrationLargeImport:
         """TC-L02: 881 题 ZIP 导入（upsert 幂等）"""
         assert LARGE_ZIP.exists(), f"缺少 {LARGE_ZIP}"
         with open(LARGE_ZIP, "rb") as f:
-            r = requests.post(
-                _url(f"/api/integration/banks/{large_bank_id}/import/zip"),
+            r = _post(
+                f"/api/integration/banks/{large_bank_id}/import/zip",
                 params={"external_id_prefix": "maoshi"},
                 headers=HEADERS,
                 files={"file": ("questions.zip", f, "application/zip")},
-                timeout=600,
+                max_seconds=LIMIT_LARGE_IMPORT,
             )
         assert r.status_code == 200, r.text[:500]
         result = r.json()
@@ -560,9 +534,7 @@ class TestIntegrationLargeImport:
 
     def test_large_bank_question_count(self, large_bank_id, expected_rows):
         """TC-L03: 列表抽样验证题目数量"""
-        r = requests.get(
-            _url(f"/api/integration/banks/{large_bank_id}/questions"),
-            params={"limit": 500},
+        r = _get(f"/api/integration/banks/{large_bank_id}/questions",params={"limit": 500},
             headers=HEADERS,
             timeout=30,
         )

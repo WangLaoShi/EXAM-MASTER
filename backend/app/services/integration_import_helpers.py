@@ -1,5 +1,10 @@
 """
-Integration API import helpers
+Integration API 导入结果汇总
+
+负责：
+- 构造结构化错误项（含 suggestion）
+- 截断 errors 列表（避免响应过大）
+- 生成人类可读的 message / duration_ms
 """
 
 import time
@@ -14,6 +19,7 @@ from app.schemas.integration_schemas import (
     IntegrationErrorDetail,
 )
 
+# 响应中最多返回的错误条数，超出时 errors_truncated=True
 MAX_ERRORS_IN_RESPONSE = 50
 
 
@@ -25,6 +31,7 @@ def make_error(
     field: str = None,
     suggestion: str = None,
 ) -> IntegrationErrorDetail:
+    """构造单条导入/批量错误详情。"""
     return IntegrationErrorDetail(
         code=code,
         message=message,
@@ -36,6 +43,7 @@ def make_error(
 
 
 def error_from_exception(exc: Exception, row: int = None, external_id: str = None) -> IntegrationErrorDetail:
+    """将异常转为 IntegrationErrorDetail，保留 HTTPException 中的 code/suggestion。"""
     if isinstance(exc, HTTPException):
         detail = exc.detail
         if isinstance(detail, dict):
@@ -52,6 +60,7 @@ def error_from_exception(exc: Exception, row: int = None, external_id: str = Non
 
 
 def truncate_errors(errors: list) -> tuple[list, bool]:
+    """截断错误列表，返回 (截断后列表, 是否被截断)。"""
     if len(errors) <= MAX_ERRORS_IN_RESPONSE:
         return errors, False
     return errors[:MAX_ERRORS_IN_RESPONSE], True
@@ -62,6 +71,7 @@ def finalize_import_result(
     start_time: float,
     total_rows: int,
 ) -> IntegrationImportResult:
+    """汇总导入结果：success/partial/message/duration_ms。"""
     result.total_rows = total_rows
     result.duration_ms = int((time.time() - start_time) * 1000)
     result.errors, result.errors_truncated = truncate_errors(result.errors)
@@ -96,6 +106,7 @@ def finalize_import_result(
 
 
 def finalize_batch_result(result: IntegrationBatchResult, total: int) -> IntegrationBatchResult:
+    """汇总 JSON batch 结果。"""
     result.total = total
     result.errors, result.errors_truncated = truncate_errors(result.errors)
 

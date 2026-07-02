@@ -1,5 +1,8 @@
 """
-Integration API - Import
+Integration API - Import 路由
+
+上传校验（空文件/扩展名/大小）→ IntegrationService 导入 → 审计日志。
+Query 参数 external_id_prefix 控制 CSV 题号列生成的 external_id。
 """
 
 import io

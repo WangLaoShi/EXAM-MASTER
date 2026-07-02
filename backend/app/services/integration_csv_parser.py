@@ -1,5 +1,8 @@
 """
-CSV row parsing for Integration API imports
+Integration API CSV 行解析
+
+支持中文列名（题号/题干/A~F/答案/题型）与英文列名。
+题型、难度映射见 QUESTION_TYPE_MAP / DIFFICULTY_MAP。
 """
 
 from typing import Any, Dict, Optional, Tuple

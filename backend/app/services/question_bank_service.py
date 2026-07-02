@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile, HTTPException
 
 from app.models.question_models_v2 import (
@@ -560,9 +560,11 @@ class QuestionBankService:
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
     
-    def _sync_questions_to_file(self, bank_id: str):
+    def _sync_questions_to_file(self, bank_id: str, compact: bool = False):
         """同步题目数据到文件"""
-        questions = self.db.query(QuestionV2).filter(
+        questions = self.db.query(QuestionV2).options(
+            joinedload(QuestionV2.options),
+        ).filter(
             QuestionV2.bank_id == bank_id
         ).all()
         
@@ -593,8 +595,14 @@ class QuestionBankService:
             questions_data.append(q_dict)
         
         questions_path = f"{self.BASE_STORAGE_PATH}/{bank_id}/questions.json"
+        Path(questions_path).parent.mkdir(parents=True, exist_ok=True)
+        dump_kwargs = {"ensure_ascii": False}
+        if compact:
+            dump_kwargs["separators"] = (",", ":")
+        else:
+            dump_kwargs["indent"] = 2
         with open(questions_path, "w", encoding="utf-8") as f:
-            json.dump(questions_data, f, ensure_ascii=False, indent=2)
+            json.dump(questions_data, f, **dump_kwargs)
     
     def renumber_questions(self, bank_id: str) -> int:
         """

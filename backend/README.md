@@ -153,9 +153,44 @@ python run.py
 ## Development
 
 ### Running Tests
+
+#### 进程内（无需启动服务）
+
 ```bash
-pytest
+pytest tests/test_all_apis.py -q
+pytest tests/test_all_apis.py::TestOpenAPIDocumentInProcess -v
 ```
+
+#### Live：全接口 OpenAPI 冒烟（需先 `python run.py`）
+
+每个 OpenAPI operation 一条用例，当前约 **230 条**（`-v` 逐条显示）：
+
+```powershell
+cd backend
+$env:TEST_ADMIN_USER="admin"
+$env:TEST_ADMIN_PASS="admin123"
+$env:INTEGRATION_API_KEY="em_live_xxx"
+
+# 全量
+python -m pytest tests/test_openapi_full_live.py -v --tb=short -ra
+
+# 统计用例数
+python -m pytest tests/test_openapi_full_live.py --collect-only -q
+
+# 只跑 Integration
+python -m pytest tests/test_openapi_full_live.py -v -k "IntegrationSmoke"
+```
+
+#### Live：Integration API 专项（含 881 题性能）
+
+```powershell
+$env:INTEGRATION_API_KEY="em_live_xxx"
+python -m pytest tests/test_integration_api_live.py -v -s
+```
+
+详细说明见 [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md) §12。
+
+耗时断言见 `tests/api_timing.py`。
 
 ### Code Formatting
 ```bash

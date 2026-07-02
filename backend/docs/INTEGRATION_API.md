@@ -504,20 +504,76 @@ A: 必须为 `file`。
 
 ## 12. 自动化测试
 
-测试文件：`tests/test_integration_api_live.py`
+### 测试文件一览
+
+| 文件 | 类型 | 说明 |
+|------|------|------|
+| `tests/test_openapi_full_live.py` | Live | **OpenAPI 全接口冒烟**（public/jwt/admin/integration），含耗时断言 |
+| `tests/test_integration_api_live.py` | Live | Integration API 专项 + 881 题性能 |
+| `tests/test_all_apis.py` | TestClient | 进程内 API + OpenAPI public 冒烟 |
+| `tests/test_complete_api.py` | TestClient | Admin 面板 + 完整 API |
+
+公共工具：`tests/api_timing.py`（耗时上限）、`tests/openapi_client.py`（OpenAPI 解析）
+
+### Integration 专项
 
 数据文件：
 
 | 文件 | 题数 | 用途 |
 |------|------|------|
 | `sample_questions.csv` / `.zip` | 10 | 功能回归 |
-| `questions.csv` / `.zip` | 881 | 大文件与性能 |
+| `questions.csv` / `.zip` | 881 | 大文件与性能（服务端应 <15s） |
 
 ```powershell
 cd backend
 $env:INTEGRATION_API_KEY = "em_live_你的key"
 python -m pytest tests/test_integration_api_live.py -v -s
 ```
+
+### 全接口 OpenAPI 冒烟（对齐 /api/docs）
+
+**特点**：从 `/openapi.json` 解析全部 operation，**每个接口一条独立 pytest 用例**（当前约 **230 条**，随 API 增长可达数百条）。`-v` 可看到逐条 `PASS/FAIL` 与用例 ID（如 `get__health`、`get__api_integration_banks`）。
+
+```powershell
+cd backend
+
+# 1. 先启动服务（另开终端）
+python run.py
+
+# 2. 设置环境变量
+$env:TEST_ADMIN_USER = "admin"
+$env:TEST_ADMIN_PASS = "admin123"
+$env:INTEGRATION_API_KEY = "em_live_你的key"   # Integration 类用例必需
+
+# 3. 全量冒烟（推荐）
+python -m pytest tests/test_openapi_full_live.py -v --tb=short -ra
+
+# 4. 只跑某一类
+python -m pytest tests/test_openapi_full_live.py -v -k "TestOpenAPIPublicSmoke"
+python -m pytest tests/test_openapi_full_live.py -v -k "TestOpenAPIIntegrationSmoke"
+python -m pytest tests/test_openapi_full_live.py -v -k "TestOpenAPIJWTSmoke"
+python -m pytest tests/test_openapi_full_live.py -v -k "TestOpenAPIAdminSmoke"
+
+# 5. 只看用例数量（不执行）
+python -m pytest tests/test_openapi_full_live.py --collect-only -q
+```
+
+**输出说明**：
+
+| 测试类 | 说明 | 典型条数 |
+|--------|------|----------|
+| `TestOpenAPIMeta` | OpenAPI / Swagger / ReDoc | 3 |
+| `TestOpenAPIPublicSmoke` | 无需鉴权 | ~45 |
+| `TestOpenAPIJWTSmoke` | JWT Bearer（登录用 form-data） | ~150+ |
+| `TestOpenAPIAdminSmoke` | Admin Session Cookie | ~20+ |
+| `TestOpenAPIIntegrationSmoke` | Integration API Key | ~15 |
+| `TestOpenAPICoverageSummary` | 覆盖统计 | 1 |
+
+失败时会显示：`HTTP 状态码 | 耗时 | 响应 body 片段（5xx 时）`。
+
+耗时阈值见 `tests/api_timing.py`（public 3s / auth 5s / import 60s / 大导入 15s）。
+
+**跳过的 operation**（由专项测试覆盖）：文件上传、大体积 import、LLM 解析、MCP execute 等，见 `tests/openapi_client.py` 中 `SKIP_PATH_PATTERNS`。
 
 ### 测试用例矩阵
 

@@ -6,6 +6,7 @@ Tests all API endpoints including auth, questions, banks, LLM, etc.
 import pytest
 import json
 import uuid
+import time
 from datetime import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -16,6 +17,15 @@ from app.core.security import get_password_hash
 from app.models.user_models import User, UserRole
 from app.models.question_models import QuestionBank, Question, QuestionOption
 from app.models.llm_models import LLMInterface, PromptTemplate
+from tests.api_timing import (
+    LIMIT_AUTH,
+    LIMIT_DOCS,
+    LIMIT_PUBLIC,
+    assert_elapsed,
+    assert_response_time,
+    time_limit_for_operation,
+)
+from tests.openapi_client import classify_operation, iter_operations, load_openapi_spec, smoke_call
 
 # Test database setup
 SQLALCHEMY_TEST_MAIN_URL = "sqlite:///./test_main.db"
@@ -47,6 +57,16 @@ app.dependency_overrides[get_qbank_db] = override_get_qbank_db
 
 # Create test client
 client = TestClient(app)
+
+
+def _client_request(method: str, path: str, **kwargs):
+    """TestClient 请求并断言耗时。"""
+    limit = kwargs.pop("max_seconds", None) or time_limit_for_operation(method, path)
+    start = time.perf_counter()
+    response = client.request(method, path, **kwargs)
+    elapsed = time.perf_counter() - start
+    assert_response_time(elapsed, limit, f"{method} {path}")
+    return response
 
 # Setup and teardown
 @pytest.fixture(scope="module", autouse=True)
@@ -133,13 +153,44 @@ class TestSystemEndpoints:
     """Test system and health endpoints"""
     
     def test_root_endpoint(self):
-        response = client.get("/")
-        assert response.status_code == 200
+        r = _client_request("GET", "/")
+        assert r.status_code == 200
     
     def test_health_endpoint(self):
-        response = client.get("/health")
-        assert response.status_code == 200
-        assert response.json()["status"] == "healthy"
+        r = _client_request("GET", "/health")
+        assert r.status_code == 200
+        assert r.json()["status"] == "healthy"
+
+
+class TestOpenAPIDocumentInProcess:
+    """进程内 OpenAPI / 文档端点（对齐 /api/docs）"""
+
+    def test_openapi_json(self):
+        with assert_elapsed(LIMIT_DOCS, "GET /openapi.json"):
+            r = client.get("/openapi.json")
+        assert r.status_code == 200
+        spec = r.json()
+        assert len(spec.get("paths", {})) > 50
+
+    def test_api_docs_page(self):
+        with assert_elapsed(LIMIT_DOCS, "GET /api/docs"):
+            r = client.get("/api/docs")
+        assert r.status_code == 200
+
+    def test_public_operations_smoke(self):
+        spec = load_openapi_spec(lambda: client.get("/openapi.json").json())
+        public_ops = [o for o in iter_operations(spec) if classify_operation(o) == "public"]
+
+        def _call(method, path, **kwargs):
+            return client.request(method, path, **kwargs)
+
+        failures = []
+        for op in public_ops:
+            try:
+                smoke_call(_call, op)
+            except AssertionError as exc:
+                failures.append(f"{op.display_name}: {exc}")
+        assert not failures, "\n".join(failures[:15])
 
 
 # ===================== AUTHENTICATION TESTS =====================

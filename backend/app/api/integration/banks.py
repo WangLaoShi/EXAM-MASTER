@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_main_db, get_qbank_db
 from app.core.integration_auth import IntegrationContext, require_scopes, assert_bank_access
+from app.api.integration.serializers import to_bank_response
 from app.schemas.qbank_schemas_v2 import QuestionBankCreate, QuestionBankUpdate, QuestionBankResponse
 from app.services.integration_service import IntegrationService
 from app.services.question_bank_service import QuestionBankService
@@ -33,7 +34,7 @@ async def list_banks(
     svc = _svc(main_db, qbank_db)
     banks = svc.list_accessible_banks(ctx.owner_user_id, ctx.allowed_bank_ids, skip, limit)
     svc.log_audit(ctx.api_key.id, "GET", str(request.url.path), 200, request.client.host if request.client else None)
-    return banks
+    return [to_bank_response(b) for b in banks]
 
 
 @router.post("", response_model=QuestionBankResponse, status_code=201)
@@ -67,7 +68,7 @@ async def create_bank(
         request.client.host if request.client else None,
         "bank", bank.id, f"Created bank: {bank.name}",
     )
-    return bank
+    return to_bank_response(bank)
 
 
 @router.get("/{bank_id}", response_model=QuestionBankResponse)
@@ -82,7 +83,7 @@ async def get_bank(
     bank = svc.get_bank_or_404(bank_id)
     assert_bank_access(ctx, bank_id, bank.creator_id)
     svc.log_audit(ctx.api_key.id, "GET", str(request.url.path), 200, request.client.host if request.client else None, "bank", bank_id)
-    return bank
+    return to_bank_response(bank)
 
 
 @router.put("/{bank_id}", response_model=QuestionBankResponse)
@@ -100,7 +101,7 @@ async def update_bank(
     qbank_svc = QuestionBankService(qbank_db)
     updated = qbank_svc.update_question_bank(bank_id, **data.model_dump(exclude_unset=True))
     svc.log_audit(ctx.api_key.id, "PUT", str(request.url.path), 200, request.client.host if request.client else None, "bank", bank_id)
-    return updated
+    return to_bank_response(updated)
 
 
 @router.delete("/{bank_id}")
