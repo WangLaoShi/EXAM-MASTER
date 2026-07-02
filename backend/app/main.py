@@ -5,6 +5,7 @@ Main FastAPI application with integrated admin panel
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.openapi.docs import get_redoc_html
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -56,9 +57,19 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     docs_url="/api/docs",  # Changed from settings.docs_url
-    redoc_url="/api/redoc",  # Changed from settings.redoc_url
+    redoc_url=None,  # Custom route below uses stable redoc@2 CDN
     lifespan=lifespan
 )
+
+
+@app.get("/api/redoc", include_in_schema=False)
+async def redoc_html(request: Request) -> HTMLResponse:
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    return get_redoc_html(
+        openapi_url=f"{root_path}{app.openapi_url}",
+        title=f"{settings.app_name} - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js",
+    )
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")

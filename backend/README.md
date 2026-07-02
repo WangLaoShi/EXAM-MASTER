@@ -4,14 +4,14 @@ A modern question bank management system built with FastAPI with integrated admi
 
 ## Features
 
-- 🔐 JWT Authentication with role-based access control
-- 👥 User management (Admin, Teacher, Student roles)
-- 📚 Multi-question bank management
-- ❓ Dynamic question options (not limited to ABCD)
-- 📁 File upload and resource management
-- 📊 Statistics and analytics
-- 🔄 Import/Export support (CSV, JSON, Markdown, etc.)
-- 🎯 Multiple quiz modes (practice, exam, timed)
+- JWT Authentication with role-based access control
+- User management (Admin, Teacher, Student roles)
+- Multi-question bank management
+- Dynamic question options (not limited to ABCD)
+- File upload and resource management
+- Statistics and analytics
+- Import/Export support (CSV, JSON, Markdown, etc.)
+- Multiple quiz modes (practice, exam, timed)
 
 ## Tech Stack
 
@@ -33,72 +33,92 @@ backend/
 │   ├── services/        # Business logic
 │   └── utils/           # Utilities
 ├── databases/           # SQLite databases
-├── storage/            # File storage
-│   ├── question_banks/  # Question bank files
-│   ├── resources/       # Media resources
-│   └── uploads/         # Temporary uploads
+├── storage/             # File storage
+├── init_admin.py        # Create admin user (run once after first start)
+├── run.py               # Application entry point
 └── requirements.txt
 ```
 
 ## Installation
 
-1. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+### Requirements
 
-2. Install dependencies:
-```bash
+- Python **3.11.9**（见 `.python-version`）
+- pip
+
+### Windows (PowerShell)
+
+```powershell
+cd backend
+
+# 创建虚拟环境（若 venv 已存在且服务在运行，需先停止 python run.py）
+& "$env:USERPROFILE\.pyenv\pyenv-win\versions\3.11.9\python.exe" -m venv venv
+
+# 激活虚拟环境
+.\venv\Scripts\Activate.ps1
+
+# 确认版本
+python --version   # 应显示 Python 3.11.9
+
+# 安装依赖
 pip install -r requirements.txt
+
+# 配置环境变量
+Copy-Item .env.example .env
+# 编辑 .env，至少设置 SECRET_KEY 和 JWT_SECRET_KEY
 ```
 
-3. Copy environment variables:
+### Linux / macOS
+
 ```bash
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your configuration
+# 编辑 .env，至少设置 SECRET_KEY 和 JWT_SECRET_KEY
 ```
 
-4. Run the application:
+## Database Initialization
+
+**无需手动建表。** 运行 `python run.py` 时，应用会在启动阶段自动调用 `init_databases()`，根据 `.env` 中的配置创建：
+
+| 数据库文件 | 环境变量 | 用途 |
+|-----------|---------|------|
+| `databases/main.db` | `DATABASE_URL` | 用户、认证、权限、答题记录 |
+| `databases/question_bank.db` | `QUESTION_BANK_DATABASE_URL` | 题库、题目、资源、LLM 模板 |
+
+LLM 提示词模板也会在首次启动时自动初始化（`app/core/init_templates.py`）。
+
+### 首次部署额外步骤
+
+```bash
+# 1. 启动服务（自动建表）
+python run.py
+
+# 2. 另开终端，创建管理员账号
+python init_admin.py
+```
+
+默认管理员凭据：
+- Username: `admin`
+- Password: `admin123`
+
+> **关于 `init_database_v2.py`**：这是历史遗留脚本，会写入独立的 `question_bank_v2.db`，当前应用**不使用**该文件。正常开发/部署**无需运行**此脚本。
+
+## Run
+
 ```bash
 python run.py
 ```
 
-The API will be available at `http://localhost:8000`
+服务默认地址：`http://localhost:8000`
 
 ## Access Points
 
 - Admin Panel: `http://localhost:8000/admin`
-- API Documentation: `http://localhost:8000/api/docs`
+- Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
-
-## Default Admin Account
-
-After running the application, create an admin account:
-
-```bash
-python init_admin.py
-```
-
-Default credentials:
-- Username: admin
-- Password: admin123
-
-## Database Architecture
-
-### Main Database (main.db)
-- User management
-- Authentication
-- Permissions
-- Answer history
-- Exam sessions
-
-### Question Bank Database (question_bank.db)
-- Question banks
-- Questions
-- Dynamic options
-- Resources
-- Version history
 
 ## API Endpoints
 

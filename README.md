@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green.svg)
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.11-blue.svg)
 ![API Version](https://img.shields.io/badge/API-v2.0-blue.svg)
 
 [English](#english) | [中文](#中文)
@@ -52,7 +52,7 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
 ### 💻 技术栈
 
 - **框架**: FastAPI 0.104.1
-- **语言**: Python 3.8+
+- **语言**: Python 3.11
 - **ORM**: SQLAlchemy 2.0.23
 - **数据库**: SQLite (开发) / PostgreSQL (生产)
 - **认证**: python-jose[cryptography] 3.3.0
@@ -76,10 +76,9 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
 ### 🚀 快速开始
 
 #### 环境要求
-- Python 3.8 或更高版本
+- Python 3.11.9（推荐，见 `backend/.python-version`）
 - pip 包管理器
-- SQLite3 (开发环境)
-- PostgreSQL (生产环境，可选)
+- SQLite3（开发环境默认使用）
 
 #### 安装步骤
 
@@ -91,10 +90,13 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
 
 2. **创建虚拟环境**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # 或
-   venv\Scripts\activate  # Windows
+   # Linux / macOS
+   python3.11 -m venv venv
+   source venv/bin/activate
+
+   # Windows (PowerShell)
+   & "$env:USERPROFILE\.pyenv\pyenv-win\versions\3.11.9\python.exe" -m venv venv
+   .\venv\Scripts\Activate.ps1
    ```
 
 3. **安装依赖**
@@ -103,56 +105,40 @@ EXAM-MASTER 是一个基于 FastAPI 构建的现代化题库管理系统后端AP
    ```
 
 4. **环境配置**
-   
-   创建 `.env` 文件：
+
+   复制示例配置并编辑：
+   ```bash
+   cp .env.example .env   # Linux / macOS
+   Copy-Item .env.example .env   # Windows
+   ```
+
+   关键配置项（完整示例见 `backend/.env.example`）：
    ```env
-   # 数据库配置
-   DATABASE_URL=sqlite:///./databases/exam_master.db
-   # DATABASE_URL=postgresql://user:password@localhost/exam_master  # PostgreSQL
-
-   # 安全配置
    SECRET_KEY=your-secret-key-here-change-in-production
-   ALGORITHM=HS256
-   ACCESS_TOKEN_EXPIRE_MINUTES=30
+   JWT_SECRET_KEY=your-jwt-secret-key-here
 
-   # CORS配置
-   BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
-
-   # 文件上传
-   MAX_UPLOAD_SIZE=10485760  # 10MB
-   ALLOWED_EXTENSIONS=csv,xlsx,xls,docx,pdf,txt,json
-
-
+   DATABASE_URL=sqlite:///./databases/main.db
+   QUESTION_BANK_DATABASE_URL=sqlite:///./databases/question_bank.db
    ```
 
-5. **初始化数据库**
-   ```bash
-   # 创建数据库表
-   python init_database_v2.py
-   
-   # 创建管理员账号
-   python init_admin.py
-   
-   # 初始化LLM模板（如果使用AI功能）
-   python init_llm_templates.py
-   ```
+5. **启动服务**
 
-6. **运行服务**
+   应用启动时会**自动建表**并初始化 LLM 提示词模板，无需手动运行数据库脚本：
    ```bash
-   # 开发模式
    python run.py
-   
-   # 或使用uvicorn直接运行
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   
-   # 生产模式
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
    ```
 
-7. **访问API文档**
-   - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
-   - 管理后台: http://localhost:8000/admin (简易HTML界面)
+6. **创建管理员（首次部署）**
+
+   服务启动后，另开终端执行：
+   ```bash
+   python init_admin.py
+   ```
+
+7. **访问 API 文档**
+   - Swagger UI: http://localhost:8000/api/docs
+   - ReDoc: http://localhost:8000/api/redoc
+   - 管理后台: http://localhost:8000/admin
 
 ### 📂 项目结构
 
@@ -204,9 +190,8 @@ backend/
 ├── tests/                     # 测试文件
 │   └── test_all_apis.py      # API测试
 ├── requirements.txt           # Python依赖
-├── init_database_v2.py        # 数据库初始化脚本
-├── init_admin.py              # 管理员初始化脚本
-├── init_llm_templates.py      # LLM模板初始化
+├── init_admin.py              # 管理员初始化脚本（首次部署运行）
+├── init_database_v2.py        # 历史脚本，当前应用不使用，无需运行
 └── run.py                     # 应用启动脚本
 ```
 
@@ -478,7 +463,7 @@ EXAM-MASTER is a modern question bank management system backend API service buil
 ### 💻 Technology Stack
 
 - **Framework**: FastAPI 0.104.1
-- **Language**: Python 3.8+
+- **Language**: Python 3.11
 - **ORM**: SQLAlchemy 2.0.23
 - **Database**: SQLite (development) / PostgreSQL (production)
 - **Authentication**: python-jose[cryptography] 3.3.0
@@ -494,10 +479,9 @@ EXAM-MASTER is a modern question bank management system backend API service buil
 ### 🚀 Quick Start
 
 #### Requirements
-- Python 3.8 or higher
+- Python 3.11.9 (recommended, see `backend/.python-version`)
 - pip package manager
-- SQLite3 (development)
-- PostgreSQL (production, optional)
+- SQLite3 (default for development)
 
 #### Installation
 
@@ -509,10 +493,13 @@ EXAM-MASTER is a modern question bank management system backend API service buil
 
 2. **Create virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # or
-   venv\Scripts\activate  # Windows
+   # Linux / macOS
+   python3.11 -m venv venv
+   source venv/bin/activate
+
+   # Windows (PowerShell)
+   & "$env:USERPROFILE\.pyenv\pyenv-win\versions\3.11.9\python.exe" -m venv venv
+   .\venv\Scripts\Activate.ps1
    ```
 
 3. **Install dependencies**
@@ -521,58 +508,40 @@ EXAM-MASTER is a modern question bank management system backend API service buil
    ```
 
 4. **Configure environment**
-   
-   Create `.env` file:
+
+   Copy the example config and edit:
+   ```bash
+   cp .env.example .env   # Linux / macOS
+   Copy-Item .env.example .env   # Windows
+   ```
+
+   Key settings (see `backend/.env.example` for the full file):
    ```env
-   # Database configuration
-   DATABASE_URL=sqlite:///./databases/exam_master.db
-   # DATABASE_URL=postgresql://user:password@localhost/exam_master  # PostgreSQL
-
-   # Security configuration
    SECRET_KEY=your-secret-key-here-change-in-production
-   ALGORITHM=HS256
-   ACCESS_TOKEN_EXPIRE_MINUTES=30
+   JWT_SECRET_KEY=your-jwt-secret-key-here
 
-   # CORS configuration
-   BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
-
-   # File upload
-   MAX_UPLOAD_SIZE=10485760  # 10MB
-   ALLOWED_EXTENSIONS=csv,xlsx,xls,docx,pdf,txt,json
-
-   # AI configuration (optional)
-   OPENAI_API_KEY=your-openai-api-key
-   LLM_MODEL=gpt-3.5-turbo
+   DATABASE_URL=sqlite:///./databases/main.db
+   QUESTION_BANK_DATABASE_URL=sqlite:///./databases/question_bank.db
    ```
 
-5. **Initialize database**
-   ```bash
-   # Create database tables
-   python init_database_v2.py
-   
-   # Create admin account
-   python init_admin.py
-   
-   # Initialize LLM templates (if using AI features)
-   python init_llm_templates.py
-   ```
+5. **Start the service**
 
-6. **Run the service**
+   Tables and LLM prompt templates are created automatically on startup:
    ```bash
-   # Development mode
    python run.py
-   
-   # Or run directly with uvicorn
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   
-   # Production mode
-   uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+   ```
+
+6. **Create admin account (first deployment)**
+
+   After the service is running, in a new terminal:
+   ```bash
+   python init_admin.py
    ```
 
 7. **Access API documentation**
-   - Swagger UI: http://localhost:8000/docs
-   - ReDoc: http://localhost:8000/redoc
-   - Admin Panel: http://localhost:8000/admin (simple HTML interface)
+   - Swagger UI: http://localhost:8000/api/docs
+   - ReDoc: http://localhost:8000/api/redoc
+   - Admin Panel: http://localhost:8000/admin
 
 ### 🧪 Testing
 
