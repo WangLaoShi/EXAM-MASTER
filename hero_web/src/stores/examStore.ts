@@ -62,7 +62,7 @@ export const useExamStore = create<ExamState>((set, get) => ({
   setCurrentQuestion: (question) =>
     set({
       currentQuestion: question,
-      draftAnswer: null,
+      draftAnswer: (question?.previous_answer as UserAnswer | null | undefined) ?? null,
       lastResult: null,
       questionStartedAt: Date.now(),
     }),

@@ -130,6 +130,7 @@ python run.py
 - Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
 - **学员 Web 答题端（Flutter Web）**: `http://localhost:8000/app-web`
+- **学员 Web 考试端（Hero Web / React）**: `http://localhost:8000/app-exam`
 - **Integration API 文档**: [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md)
 - **Integration API Key 管理**: `http://localhost:8000/admin/api-keys`
 
@@ -157,6 +158,30 @@ python run.py
 热重载开发：`flutter_app\scripts\run_web_dev.ps1`（Chrome `127.0.0.1:8080`，需后端已启动）。
 
 Flutter SDK 默认路径：`D:\EXAM-MASTER\tools\flutter`（见 `.gitignore`，需本地 `git clone` 或自行安装 Flutter）。
+
+## 学员 Web 考试端（Hero Web / React）
+
+源码目录：`../hero_web/`。基于 React + HeroUI，专注考试/练习体验。
+
+**快速联调：**
+
+```powershell
+# 1. 构建并部署到 backend/hero_web_app/
+cd hero_web
+npm install
+.\scripts\build_deploy.ps1
+
+# 2. 启动后端（若未启动）
+cd ..\backend
+python run.py
+
+# 3. 浏览器打开
+# http://127.0.0.1:8000/app-exam
+```
+
+热重载开发：`hero_web\scripts\run_dev.ps1`（Vite `127.0.0.1:5173`，API 代理到后端 8000）。
+
+详细说明见 **[hero_web/README.md](../hero_web/README.md)**。
 
 ## API Endpoints
 

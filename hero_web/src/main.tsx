@@ -28,7 +28,7 @@ function Bootstrap() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || undefined}>
         <Bootstrap />
       </BrowserRouter>
     </QueryClientProvider>

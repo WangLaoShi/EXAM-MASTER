@@ -6,8 +6,11 @@ interface ExamToolbarProps {
   onPrev?: () => void
   onNext?: () => void
   onMark: () => void
+  onFavorite: () => void
   onSubmit: () => void
   isMarked: boolean
+  isFavorite: boolean
+  isFavoriteLoading?: boolean
 }
 
 export function ExamToolbar({
@@ -16,8 +19,11 @@ export function ExamToolbar({
   onPrev,
   onNext,
   onMark,
+  onFavorite,
   onSubmit,
   isMarked,
+  isFavorite,
+  isFavoriteLoading,
 }: ExamToolbarProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-default-200 pt-4">
@@ -30,6 +36,13 @@ export function ExamToolbar({
         </Button>
         <Button variant={isMarked ? 'secondary' : 'ghost'} onPress={onMark}>
           {isMarked ? '取消标记' : '标记本题'}
+        </Button>
+        <Button
+          variant={isFavorite ? 'secondary' : 'ghost'}
+          isPending={isFavoriteLoading}
+          onPress={onFavorite}
+        >
+          {isFavorite ? '取消收藏' : '收藏本题'}
         </Button>
       </div>
       <Button variant="primary" isDisabled={!canSubmit} isPending={isSubmitting} onPress={onSubmit}>

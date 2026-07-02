@@ -12,8 +12,9 @@ export function WrongQuestionsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
         <Spinner size="lg" />
+        <span className="text-default-500">加载错题...</span>
       </div>
     )
   }
@@ -22,28 +23,37 @@ export function WrongQuestionsPage() {
     return <Alert status="danger">{getErrorMessage(error, '加载错题失败')}</Alert>
   }
 
-  const items = data?.items ?? data?.wrong_questions ?? data ?? []
+  const items = data?.wrong_questions ?? []
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-2xl font-semibold">错题本</h2>
-        <p className="text-default-500">共 {Array.isArray(items) ? items.length : 0} 条记录</p>
+        <p className="text-default-500">
+          共 {data?.total ?? items.length} 条 · 未订正 {data?.uncorrected_count ?? 0} 条
+        </p>
       </div>
       <div className="grid gap-4">
-        {Array.isArray(items) && items.length > 0 ? (
-          items.map((item: Record<string, unknown>) => (
-            <Card key={String(item.id)}>
+        {items.length > 0 ? (
+          items.map((item) => (
+            <Card key={item.id}>
               <Card.Header>
                 <div className="flex items-center gap-2">
-                  <Chip size="sm">{String(item.question_type ?? '题目')}</Chip>
-                  <Chip size="sm" color="danger" variant="soft">
-                    错 {String(item.error_count ?? 1)} 次
+                  <Chip size="sm" variant="secondary">
+                    {item.question_type}
                   </Chip>
+                  <Chip size="sm" color="danger" variant="soft">
+                    错 {item.error_count} 次
+                  </Chip>
+                  {item.corrected ? (
+                    <Chip size="sm" color="success" variant="soft">
+                      已订正
+                    </Chip>
+                  ) : null}
                 </div>
               </Card.Header>
               <Card.Content>
-                <RichContent content={String(item.question_stem ?? item.stem ?? '暂无题干')} />
+                <RichContent content={item.question_stem || '暂无题干'} />
               </Card.Content>
             </Card>
           ))

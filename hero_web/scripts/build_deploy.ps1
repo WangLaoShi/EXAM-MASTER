@@ -3,10 +3,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $ProjectRoot
 
-Write-Host "Building Hero Web..."
+Write-Host "Building Hero Web for /app-exam ..."
+$env:VITE_BASE_PATH = "/app-exam/"
 npm run build
 
 if (-not (Test-Path $OutputDir)) {

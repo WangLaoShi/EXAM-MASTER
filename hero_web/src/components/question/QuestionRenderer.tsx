@@ -35,7 +35,11 @@ export function QuestionRenderer({
   result,
   onChange,
 }: QuestionRendererProps) {
-  const options = question.options ?? []
+  const options = (question.options ?? []).map((option) => ({
+    option_label: option.option_label ?? (option as { label?: string }).label ?? '',
+    option_content: option.option_content ?? (option as { content?: string }).content ?? '',
+    is_correct: option.is_correct,
+  }))
 
   return (
     <div className="flex flex-col gap-6">

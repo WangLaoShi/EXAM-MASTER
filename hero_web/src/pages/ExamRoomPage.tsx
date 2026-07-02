@@ -8,6 +8,8 @@ import {
   submitAnswer,
   updatePracticeSession,
 } from '@/api/practice'
+import { toggleFavorite } from '@/api/favorites'
+import { fetchQuestionBank } from '@/api/qbank'
 import { getErrorMessage } from '@/api/client'
 import { ExamHeader } from '@/components/exam/ExamHeader'
 import { ExamToolbar } from '@/components/exam/ExamToolbar'
@@ -24,6 +26,7 @@ export function ExamRoomPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [submitOpen, setSubmitOpen] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
 
   const displayMode = searchParams.get('mode') === 'mock_exam' ? 'mock_exam' : 'practice'
   const timeLimitSeconds = searchParams.get('limit')
@@ -52,6 +55,12 @@ export function ExamRoomPage() {
     enabled: Boolean(sessionId),
   })
 
+  const bankQuery = useQuery({
+    queryKey: ['question-bank', sessionQuery.data?.bank_id],
+    queryFn: () => fetchQuestionBank(sessionQuery.data!.bank_id),
+    enabled: Boolean(sessionQuery.data?.bank_id),
+  })
+
   const questionQuery = useQuery({
     queryKey: ['practice-current-question', sessionId, sessionQuery.data?.current_index],
     queryFn: () => fetchCurrentQuestion(sessionId),
@@ -68,6 +77,7 @@ export function ExamRoomPage() {
   useEffect(() => {
     if (questionQuery.data) {
       setCurrentQuestion(questionQuery.data)
+      setIsFavorite(questionQuery.data.is_favorite)
     }
   }, [questionQuery.data, setCurrentQuestion])
 
@@ -97,6 +107,15 @@ export function ExamRoomPage() {
     },
   })
 
+  const favoriteMutation = useMutation({
+    mutationFn: () =>
+      toggleFavorite(currentQuestion!.id, currentQuestion!.bank_id, isFavorite),
+    onSuccess: () => {
+      setIsFavorite((prev) => !prev)
+      void queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    },
+  })
+
   const jumpMutation = useMutation({
     mutationFn: (index: number) => updatePracticeSession(sessionId, { current_index: index }),
     onSuccess: async () => {
@@ -111,6 +130,7 @@ export function ExamRoomPage() {
   }, [navigate, sessionId])
 
   const session = sessionQuery.data
+  const bankTitle = bankQuery.data?.name ?? session?.bank_id ?? '考试'
   const canSubmit = Boolean(draftAnswer && currentQuestion && !submitMutation.isPending)
 
   const unansweredCount = useMemo(() => {
@@ -144,7 +164,7 @@ export function ExamRoomPage() {
       <ExamLayout
         header={
           <ExamHeader
-            title={`考试 · ${session.bank_id}`}
+            title={bankTitle}
             currentIndex={currentIndex}
             totalQuestions={session.total_questions}
             startedAt={startedAt}
@@ -184,7 +204,10 @@ export function ExamRoomPage() {
           canSubmit={canSubmit}
           isSubmitting={submitMutation.isPending}
           isMarked={markedIds.has(currentQuestion.id)}
+          isFavorite={isFavorite}
+          isFavoriteLoading={favoriteMutation.isPending}
           onMark={() => toggleMark(currentQuestion.id)}
+          onFavorite={() => favoriteMutation.mutate()}
           onSubmit={() => submitMutation.mutate()}
           onPrev={
             session.current_index > 0
