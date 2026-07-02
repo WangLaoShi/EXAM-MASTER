@@ -194,6 +194,8 @@ class QuestionBankService:
         type: QuestionType,
         options: List[Dict] = None,
         meta_data: Dict = None,
+        sync_to_file: bool = True,
+        auto_commit: bool = True,
         **kwargs
     ) -> QuestionV2:
         """添加题目到题库"""
@@ -233,10 +235,13 @@ class QuestionBankService:
         bank.total_questions += 1
         bank.updated_at = datetime.utcnow()
         
-        self.db.commit()
+        if auto_commit:
+            self.db.commit()
+        else:
+            self.db.flush()
         
-        # 同步到文件系统
-        self._sync_questions_to_file(bank_id)
+        if sync_to_file:
+            self._sync_questions_to_file(bank_id)
         
         return question
     

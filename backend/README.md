@@ -120,6 +120,8 @@ python run.py
 - Admin Panel: `http://localhost:8000/admin`
 - Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
+- **Integration API 文档**: [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md)
+- **Integration API Key 管理**: `http://localhost:8000/admin/api-keys`
 
 ## API Endpoints
 

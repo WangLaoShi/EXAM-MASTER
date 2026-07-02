@@ -56,7 +56,7 @@ def init_databases():
     """Initialize both databases"""
     # Import all models to ensure they are registered with SQLAlchemy
     from app.models import user_models, question_models, question_models_v2, llm_models
-    from app.models import user_practice, activation, user_statistics, ai_models
+    from app.models import user_practice, activation, user_statistics, ai_models, integration_models
 
     # Create all tables
     BaseMain.metadata.create_all(bind=engine_main)
