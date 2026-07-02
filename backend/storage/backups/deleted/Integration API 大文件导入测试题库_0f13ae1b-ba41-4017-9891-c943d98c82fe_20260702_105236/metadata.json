@@ -1,0 +1,12 @@
+{
+  "id": "0f13ae1b-ba41-4017-9891-c943d98c82fe",
+  "name": "Integration API 大文件导入测试题库",
+  "description": "questions.csv / questions.zip 881 题",
+  "category": "integration-test-large",
+  "version": "1.0.0",
+  "created_at": "2026-07-02T10:11:24.966965",
+  "creator_id": 1,
+  "structure_version": "2.0",
+  "question_count": 0,
+  "resource_count": 0
+}

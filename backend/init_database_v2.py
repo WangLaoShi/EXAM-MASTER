@@ -1,5 +1,8 @@
 """
-初始化数据库 V2 - 创建新的表结构
+初始化数据库 V2 - 历史遗留脚本
+
+注意：此脚本写入独立的 question_bank_v2.db，当前应用不使用该文件。
+正常部署请直接运行 python run.py，由 init_databases() 自动建表。
 """
 
 import os

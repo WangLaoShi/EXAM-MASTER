@@ -7,8 +7,9 @@ from sqlalchemy import text
 import sys
 import os
 
-# Add parent directory to path to import app modules
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add backend root to path to import app modules
+BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, BACKEND_ROOT)
 
 from app.core.database import SessionQBank
 

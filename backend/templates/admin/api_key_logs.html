@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+
+{% block title %}API Key 审计日志{% endblock %}
+
+{% block breadcrumb %}
+<a href="/admin">首页</a>
+<span>/</span>
+<a href="/admin/api-keys">集成 API Key</a>
+<span>/</span>
+审计日志
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">审计日志 — {{ api_key.name }}</h3>
+        <a href="/admin/api-keys" class="btn btn-default btn-sm">返回</a>
+    </div>
+    <div class="card-body">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>方法</th>
+                        <th>路径</th>
+                        <th>状态</th>
+                        <th>IP</th>
+                        <th>摘要</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td><code>{{ log.method }}</code></td>
+                        <td style="font-size: 12px;">{{ log.path }}</td>
+                        <td>{{ log.status_code }}</td>
+                        <td>{{ log.ip_address or '-' }}</td>
+                        <td style="font-size: 12px;">{{ log.request_summary or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align:center;color:#999;">暂无日志</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

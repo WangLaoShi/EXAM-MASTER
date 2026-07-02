@@ -1,0 +1,12 @@
+{
+  "id": "c1af6855-80ab-4e2e-a6c8-7ffe10a83f10",
+  "name": "Integration API 自动化测试题库",
+  "description": "由 test_integration_api_live.py 创建，可安全删除",
+  "category": "integration-test",
+  "version": "1.0.0",
+  "created_at": "2026-07-02T10:00:21.169956",
+  "creator_id": 1,
+  "structure_version": "2.0",
+  "question_count": 0,
+  "resource_count": 0
+}

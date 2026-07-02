@@ -2,10 +2,13 @@
 Pydantic Schemas for Question Bank V2
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
+
+if TYPE_CHECKING:
+    from app.models.question_models_v2 import QuestionBankV2
 
 
 class QuestionTypeEnum(str, Enum):
@@ -68,9 +71,35 @@ class QuestionBankResponse(QuestionBankBase):
     allow_fork: bool
     created_at: datetime
     updated_at: Optional[datetime]
-    
-    class Config:
-        orm_mode = True
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+def question_bank_to_response(bank: "QuestionBankV2") -> QuestionBankResponse:
+    """QuestionBankV2 ORM → QuestionBankResponse（Pydantic v2 兼容）。"""
+    storage = bank.storage_type.value if hasattr(bank.storage_type, "value") else str(bank.storage_type)
+    return QuestionBankResponse(
+        id=bank.id,
+        name=bank.name,
+        description=bank.description,
+        category=bank.category,
+        tags=bank.tags or [],
+        version=bank.version or "1.0.0",
+        folder_path=bank.folder_path or "",
+        storage_type=storage,
+        total_questions=bank.total_questions or 0,
+        total_size_mb=float(bank.total_size_mb or 0),
+        has_images=bool(bank.has_images),
+        has_audio=bool(bank.has_audio),
+        has_video=bool(bank.has_video),
+        creator_id=bank.creator_id,
+        is_public=bool(bank.is_public),
+        is_published=bool(bank.is_published),
+        allow_download=bool(bank.allow_download),
+        allow_fork=bool(bank.allow_fork),
+        created_at=bank.created_at,
+        updated_at=bank.updated_at,
+    )
 
 
 # ==================== Question Schemas ====================

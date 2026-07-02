@@ -23,7 +23,8 @@ from app.schemas.qbank_schemas_v2 import (
     QuestionUpdate,
     QuestionResponse,
     QuestionImportRequest,
-    QuestionExportRequest
+    QuestionExportRequest,
+    question_bank_to_response,
 )
 
 router = APIRouter()
@@ -47,7 +48,7 @@ async def create_question_bank(
         tags=bank_data.tags,
         is_public=bank_data.is_public
     )
-    return bank
+    return question_bank_to_response(bank)
 
 
 @router.get("/banks", response_model=List[QuestionBankResponse], tags=["📚 Bank Management"])
@@ -78,7 +79,7 @@ async def list_question_banks(
     )
     
     banks = query.offset(skip).limit(limit).all()
-    return banks
+    return [question_bank_to_response(b) for b in banks]
 
 
 @router.get("/banks/{bank_id}", response_model=QuestionBankResponse, tags=["📚 Bank Management"])
@@ -98,7 +99,7 @@ async def get_question_bank(
     if not bank.is_public and bank.creator_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权访问该题库")
     
-    return bank
+    return question_bank_to_response(bank)
 
 
 @router.put("/banks/{bank_id}", response_model=QuestionBankResponse, tags=["📚 Bank Management"])
@@ -123,7 +124,7 @@ async def update_question_bank(
     update_data = bank_data.dict(exclude_unset=True)
     bank = service.update_question_bank(bank_id, **update_data)
     
-    return bank
+    return question_bank_to_response(bank)
 
 
 @router.delete("/banks/{bank_id}", tags=["📚 Bank Management"])

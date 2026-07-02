@@ -1,0 +1,138 @@
+{% extends "admin/base.html" %}
+
+{% block title %}集成 API Key{% endblock %}
+
+{% block breadcrumb %}
+<a href="/admin">首页</a>
+<span>/</span>
+集成 API Key
+{% endblock %}
+
+{% block content %}
+{% if new_api_key %}
+<div class="card" style="border-color: #4CAF50; margin-bottom: 20px;">
+    <div class="card-header">
+        <h3 class="card-title" style="color: #2E7D32;">API Key 已创建 — 请立即复制保存</h3>
+    </div>
+    <div class="card-body">
+        <p style="margin-bottom: 10px;">此密钥<strong>仅显示一次</strong>，关闭页面后将无法再次查看完整内容。</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 6px; font-family: monospace; word-break: break-all; user-select: all;">
+            {{ new_api_key }}
+        </div>
+        <p style="margin-top: 10px; color: #666; font-size: 13px;">
+            使用方式：<code>Authorization: Bearer {{ new_api_key[:20] }}...</code> 或请求头 <code>X-API-Key</code>
+        </p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">集成 API Key 管理</h3>
+        <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('createForm').style.display='block'">
+            <i class="fas fa-plus"></i> 申请新 Key
+        </button>
+    </div>
+    <div class="card-body">
+        <p style="color: #666; margin-bottom: 20px;">
+            供远端系统对接 <code>/api/integration/</code> 专用接口。详见
+            <a href="/api/docs#/Integration%20-%20Banks" target="_blank">Integration API 文档</a>
+        </p>
+
+        <div id="createForm" class="card" style="display: none; margin-bottom: 20px; background: #fafafa;">
+            <div class="card-body">
+                <h4>申请新 API Key</h4>
+                <form method="post" action="/admin/api-keys/create">
+                    <div class="form-group">
+                        <label>名称 *</label>
+                        <input type="text" name="name" class="form-control" required placeholder="如：教务系统-生产环境">
+                    </div>
+                    <div class="form-group">
+                        <label>权限范围</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            {% for scope in scopes %}
+                            <label style="display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" name="scopes" value="{{ scope }}"
+                                    {% if scope in ['bank:write', 'question:write', 'question:import', 'bank:read', 'question:read'] %}checked{% endif %}>
+                                {{ scope }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>限定题库 ID（可选，逗号分隔，留空=该账号下全部题库）</label>
+                        <input type="text" name="allowed_bank_ids" class="form-control" placeholder="uuid1, uuid2">
+                    </div>
+                    <div class="form-group">
+                        <label>IP 白名单（可选，逗号分隔）</label>
+                        <input type="text" name="ip_whitelist" class="form-control" placeholder="192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                        <label>速率限制（次/分钟）</label>
+                        <input type="number" name="rate_limit_per_minute" class="form-control" value="120" min="1" max="10000">
+                    </div>
+                    <div class="form-group">
+                        <label>归属用户 ID（可选，默认当前管理员）</label>
+                        <select name="owner_user_id" class="form-control">
+                            <option value="">当前管理员 ({{ current_user.username }})</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">生成 API Key</button>
+                    <button type="button" class="btn btn-default" onclick="document.getElementById('createForm').style.display='none'">取消</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>Key 前缀</th>
+                        <th>权限</th>
+                        <th>状态</th>
+                        <th>最后使用</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in api_keys %}
+                    <tr>
+                        <td>{{ key.name }}</td>
+                        <td><code>{{ key.key_prefix }}...</code></td>
+                        <td>
+                            {% for s in key.scopes %}
+                            <span class="tag tag-blue" style="margin: 2px;">{{ s }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if key.is_active %}
+                            <span class="tag tag-green">有效</span>
+                            {% else %}
+                            <span class="tag tag-red">已吊销</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ key.last_used_at.strftime('%Y-%m-%d %H:%M') if key.last_used_at else '-' }}</td>
+                        <td>{{ key.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if key.is_active %}
+                            <form method="post" action="/admin/api-keys/{{ key.id }}/revoke" style="display:inline;" onsubmit="return confirm('确定吊销此 Key？');">
+                                <button type="submit" class="btn btn-danger btn-sm">吊销</button>
+                            </form>
+                            {% endif %}
+                            <a href="/admin/api-keys/{{ key.id }}/logs" class="btn btn-default btn-sm">日志</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" style="text-align:center;color:#999;">暂无 API Key</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

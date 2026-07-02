@@ -4,14 +4,14 @@ A modern question bank management system built with FastAPI with integrated admi
 
 ## Features
 
-- 🔐 JWT Authentication with role-based access control
-- 👥 User management (Admin, Teacher, Student roles)
-- 📚 Multi-question bank management
-- ❓ Dynamic question options (not limited to ABCD)
-- 📁 File upload and resource management
-- 📊 Statistics and analytics
-- 🔄 Import/Export support (CSV, JSON, Markdown, etc.)
-- 🎯 Multiple quiz modes (practice, exam, timed)
+- JWT Authentication with role-based access control
+- User management (Admin, Teacher, Student roles)
+- Multi-question bank management
+- Dynamic question options (not limited to ABCD)
+- File upload and resource management
+- Statistics and analytics
+- Import/Export support (CSV, JSON, Markdown, etc.)
+- Multiple quiz modes (practice, exam, timed)
 
 ## Tech Stack
 
@@ -33,72 +33,104 @@ backend/
 │   ├── services/        # Business logic
 │   └── utils/           # Utilities
 ├── databases/           # SQLite databases
-├── storage/            # File storage
-│   ├── question_banks/  # Question bank files
-│   ├── resources/       # Media resources
-│   └── uploads/         # Temporary uploads
+├── storage/             # File storage
+├── init_admin.py        # Create admin user (run once after first start)
+├── scripts/legacy/      # 历史数据修复脚本（正常部署无需运行）
+├── run.py               # Application entry point
 └── requirements.txt
 ```
 
 ## Installation
 
-1. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+### Requirements
 
-2. Install dependencies:
-```bash
+- Python **3.11.9**（见 `.python-version`）
+- pip
+
+### Windows (PowerShell)
+
+```powershell
+cd backend
+
+# 创建虚拟环境（若 venv 已存在且服务在运行，需先停止 python run.py）
+& "$env:USERPROFILE\.pyenv\pyenv-win\versions\3.11.9\python.exe" -m venv venv
+
+# 激活虚拟环境
+.\venv\Scripts\Activate.ps1
+
+# 确认版本
+python --version   # 应显示 Python 3.11.9
+
+# 安装依赖
 pip install -r requirements.txt
+
+# 配置环境变量
+Copy-Item .env.example .env
+# 编辑 .env，至少设置 SECRET_KEY 和 JWT_SECRET_KEY
 ```
 
-3. Copy environment variables:
+### Linux / macOS
+
 ```bash
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your configuration
+# 编辑 .env，至少设置 SECRET_KEY 和 JWT_SECRET_KEY
 ```
 
-4. Run the application:
+## Database Initialization
+
+**无需手动建表。** 运行 `python run.py` 时，应用会在启动阶段自动调用 `init_databases()`，根据 `.env` 中的配置创建：
+
+| 数据库文件 | 环境变量 | 用途 |
+|-----------|---------|------|
+| `databases/main.db` | `DATABASE_URL` | 用户、认证、权限、答题记录 |
+| `databases/question_bank.db` | `QUESTION_BANK_DATABASE_URL` | 题库、题目、资源、LLM 模板 |
+
+LLM 提示词模板也会在首次启动时自动初始化（`app/core/init_templates.py`）。
+
+### 首次部署额外步骤
+
+```bash
+# 1. 启动服务（自动建表）
+python run.py
+
+# 2. 另开终端，创建管理员账号
+python init_admin.py
+```
+
+默认管理员凭据：
+- Username: `admin`
+- Password: `admin123`
+
+> **关于 `init_database_v2.py`**：这是历史遗留脚本，会写入独立的 `question_bank_v2.db`，当前应用**不使用**该文件。正常开发/部署**无需运行**此脚本。
+
+## Run
+
 ```bash
 python run.py
 ```
 
-The API will be available at `http://localhost:8000`
+服务默认地址：`http://localhost:8000`
+
+> **Windows 注意**：`run.py` 使用 `reload=True`，异常退出后可能留下**孤儿 uvicorn 子进程**，导致请求仍打到旧代码（例如 `GET /api/v2/qbank/banks` 500）。  
+> 重启前先结束占用 8000 端口的进程：
+> ```powershell
+> Get-CimInstance Win32_Process -Filter "name='python.exe'" |
+>   Where-Object { $_.CommandLine -match 'uvicorn|multiprocessing-fork|run\.py' } |
+>   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+> ```
+> 或不用 reload：`python -m uvicorn app.main:app --host 0.0.0.0 --port 8000`
 
 ## Access Points
 
 - Admin Panel: `http://localhost:8000/admin`
-- API Documentation: `http://localhost:8000/api/docs`
+- Swagger UI: `http://localhost:8000/api/docs`
 - ReDoc: `http://localhost:8000/api/redoc`
-
-## Default Admin Account
-
-After running the application, create an admin account:
-
-```bash
-python init_admin.py
-```
-
-Default credentials:
-- Username: admin
-- Password: admin123
-
-## Database Architecture
-
-### Main Database (main.db)
-- User management
-- Authentication
-- Permissions
-- Answer history
-- Exam sessions
-
-### Question Bank Database (question_bank.db)
-- Question banks
-- Questions
-- Dynamic options
-- Resources
-- Version history
+- **Integration API 文档**: [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md)
+- **Integration API Key 管理**: `http://localhost:8000/admin/api-keys`
 
 ## API Endpoints
 
@@ -130,9 +162,51 @@ Default credentials:
 ## Development
 
 ### Running Tests
+
+#### GitHub CI（自动）
+
+每次向 `main` / `dev_2.0` 推送或提交 PR（修改 `backend/`）时，GitHub Actions 会运行 `tests/test_ci_smoke.py`（约 50+ 条进程内用例：健康检查、OpenAPI、JWT 登录、题库序列化、逐条 public 接口）。
+
+Live 测试（`@pytest.mark.live`）与慢速测试（`@pytest.mark.slow`）**不在 CI 中运行**，需在本地手动执行。
+
+#### 进程内（无需启动服务）
+
 ```bash
-pytest
+pytest tests/test_ci_smoke.py -v
+pytest tests/test_all_apis.py -q
+pytest tests/test_all_apis.py::TestOpenAPIDocumentInProcess -v
 ```
+
+#### Live：全接口 OpenAPI 冒烟（需先 `python run.py`）
+
+每个 OpenAPI operation 一条用例，当前约 **230 条**（`-v` 逐条显示）：
+
+```powershell
+cd backend
+$env:TEST_ADMIN_USER="admin"
+$env:TEST_ADMIN_PASS="admin123"
+$env:INTEGRATION_API_KEY="em_live_xxx"
+
+# 全量
+python -m pytest tests/test_openapi_full_live.py -v --tb=short -ra
+
+# 统计用例数
+python -m pytest tests/test_openapi_full_live.py --collect-only -q
+
+# 只跑 Integration
+python -m pytest tests/test_openapi_full_live.py -v -k "IntegrationSmoke"
+```
+
+#### Live：Integration API 专项（含 881 题性能）
+
+```powershell
+$env:INTEGRATION_API_KEY="em_live_xxx"
+python -m pytest tests/test_integration_api_live.py -v -s
+```
+
+详细说明见 [docs/INTEGRATION_API.md](docs/INTEGRATION_API.md) §12。
+
+耗时断言见 `tests/api_timing.py`。
 
 ### Code Formatting
 ```bash

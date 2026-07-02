@@ -1,0 +1,337 @@
+[
+  {
+    "id": "4c7d3a39-e010-4adf-a376-a8c5bc23b33a",
+    "number": 1,
+    "stem": "Python是什么类型的编程语言？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "编程基础",
+    "explanation": "Python是一种解释型的高级编程语言",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:23.631981",
+    "options": [
+      {
+        "label": "A",
+        "content": "编译型语言",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "解释型语言",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "汇编语言",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "机器语言",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "a0d6784f-6f37-4524-992c-b1223fc65d8a",
+    "number": 2,
+    "stem": "以下哪个是Python的关键字？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "语法基础",
+    "explanation": "def是Python中定义函数的关键字",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:23.878063",
+    "options": [
+      {
+        "label": "A",
+        "content": "def",
+        "is_correct": true
+      },
+      {
+        "label": "B",
+        "content": "function",
+        "is_correct": false
+      },
+      {
+        "label": "C",
+        "content": "var",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "let",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "4726772e-966f-495f-9d4e-a42d4ddda950",
+    "number": 3,
+    "stem": "Python中创建列表使用什么符号？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "数据结构",
+    "explanation": "Python中使用方括号[]创建列表",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:24.109872",
+    "options": [
+      {
+        "label": "A",
+        "content": "()",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "[]",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "{}",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "<>",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "4eed2094-ab19-4e27-bae7-9c450eb4fd4a",
+    "number": 4,
+    "stem": "以下哪些是Python的内置数据类型？",
+    "type": "multiple",
+    "difficulty": "medium",
+    "category": "数据类型",
+    "explanation": "list、dict和tuple都是Python的内置数据类型",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:24.317911",
+    "options": [
+      {
+        "label": "A",
+        "content": "list",
+        "is_correct": true
+      },
+      {
+        "label": "B",
+        "content": "dict",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "array",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "tuple",
+        "is_correct": true
+      },
+      {
+        "label": "E",
+        "content": "matrix",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "42176d8c-3303-4410-93f4-f11f5b01d321",
+    "number": 5,
+    "stem": "Python中的缩进有什么作用？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "语法基础",
+    "explanation": "Python使用缩进来表示代码块的层级关系",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:24.568853",
+    "options": [
+      {
+        "label": "A",
+        "content": "美观",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "表示代码块",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "注释",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "声明变量",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "8d82faba-aa9a-453b-95d1-27c8c2cc2792",
+    "number": 6,
+    "stem": "如何在Python中导入模块？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "模块系统",
+    "explanation": "使用import关键字导入Python模块",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:24.836203",
+    "options": [
+      {
+        "label": "A",
+        "content": "include",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "import",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "require",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "using",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "509f8b0a-dff8-4cb2-9b8d-09b846fe7175",
+    "number": 7,
+    "stem": "Python中的字符串可以用哪些引号表示？",
+    "type": "multiple",
+    "difficulty": "medium",
+    "category": "字符串",
+    "explanation": "Python支持单引号、双引号和三引号表示字符串",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:25.051389",
+    "options": [
+      {
+        "label": "A",
+        "content": "单引号",
+        "is_correct": true
+      },
+      {
+        "label": "B",
+        "content": "双引号",
+        "is_correct": true
+      },
+      {
+        "label": "C",
+        "content": "三引号",
+        "is_correct": true
+      },
+      {
+        "label": "D",
+        "content": "反引号",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "5f839bdf-b813-4bc4-b4ee-242848ed4830",
+    "number": 8,
+    "stem": "以下哪个函数用于获取列表的长度？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "内置函数",
+    "explanation": "len()函数用于获取列表等序列的长度",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:25.300490",
+    "options": [
+      {
+        "label": "A",
+        "content": "size()",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "length()",
+        "is_correct": false
+      },
+      {
+        "label": "C",
+        "content": "len()",
+        "is_correct": true
+      },
+      {
+        "label": "D",
+        "content": "count()",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "92eb4e74-312c-4951-bbd8-40c26dfb5966",
+    "number": 9,
+    "stem": "Python中的None表示什么？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "基础概念",
+    "explanation": "None表示空值或不存在的值",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:25.542975",
+    "options": [
+      {
+        "label": "A",
+        "content": "0",
+        "is_correct": false
+      },
+      {
+        "label": "B",
+        "content": "空字符串",
+        "is_correct": false
+      },
+      {
+        "label": "C",
+        "content": "空值",
+        "is_correct": true
+      },
+      {
+        "label": "D",
+        "content": "错误",
+        "is_correct": false
+      }
+    ]
+  },
+  {
+    "id": "7b2f5590-95b1-4877-a85a-294637a6fb9e",
+    "number": 10,
+    "stem": "如何在Python中定义一个类？",
+    "type": "single",
+    "difficulty": "easy",
+    "category": "面向对象",
+    "explanation": "使用class关键字定义Python类",
+    "meta_data": {},
+    "created_at": "2026-07-02T02:00:25.834561",
+    "options": [
+      {
+        "label": "A",
+        "content": "class",
+        "is_correct": true
+      },
+      {
+        "label": "B",
+        "content": "def class",
+        "is_correct": false
+      },
+      {
+        "label": "C",
+        "content": "function",
+        "is_correct": false
+      },
+      {
+        "label": "D",
+        "content": "struct",
+        "is_correct": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "id": "b69e098d-9b27-4b0e-bde4-0b3e5d8ccb06",
+  "name": "Integration API 自动化测试题库",
+  "description": "已更新描述 - integration test",
+  "category": "integration-test",
+  "version": "1.0.0",
+  "updated_at": "2026-07-02T10:10:41.096161",
+  "total_questions": 10,
+  "has_images": false,
+  "has_audio": false,
+  "has_video": false
+}

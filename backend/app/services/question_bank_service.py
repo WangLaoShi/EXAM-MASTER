@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile, HTTPException
 
 from app.models.question_models_v2 import (
@@ -194,6 +194,8 @@ class QuestionBankService:
         type: QuestionType,
         options: List[Dict] = None,
         meta_data: Dict = None,
+        sync_to_file: bool = True,
+        auto_commit: bool = True,
         **kwargs
     ) -> QuestionV2:
         """添加题目到题库"""
@@ -233,10 +235,13 @@ class QuestionBankService:
         bank.total_questions += 1
         bank.updated_at = datetime.utcnow()
         
-        self.db.commit()
+        if auto_commit:
+            self.db.commit()
+        else:
+            self.db.flush()
         
-        # 同步到文件系统
-        self._sync_questions_to_file(bank_id)
+        if sync_to_file:
+            self._sync_questions_to_file(bank_id)
         
         return question
     
@@ -555,9 +560,11 @@ class QuestionBankService:
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
     
-    def _sync_questions_to_file(self, bank_id: str):
+    def _sync_questions_to_file(self, bank_id: str, compact: bool = False):
         """同步题目数据到文件"""
-        questions = self.db.query(QuestionV2).filter(
+        questions = self.db.query(QuestionV2).options(
+            joinedload(QuestionV2.options),
+        ).filter(
             QuestionV2.bank_id == bank_id
         ).all()
         
@@ -588,8 +595,14 @@ class QuestionBankService:
             questions_data.append(q_dict)
         
         questions_path = f"{self.BASE_STORAGE_PATH}/{bank_id}/questions.json"
+        Path(questions_path).parent.mkdir(parents=True, exist_ok=True)
+        dump_kwargs = {"ensure_ascii": False}
+        if compact:
+            dump_kwargs["separators"] = (",", ":")
+        else:
+            dump_kwargs["indent"] = 2
         with open(questions_path, "w", encoding="utf-8") as f:
-            json.dump(questions_data, f, ensure_ascii=False, indent=2)
+            json.dump(questions_data, f, **dump_kwargs)
     
     def renumber_questions(self, bank_id: str) -> int:
         """

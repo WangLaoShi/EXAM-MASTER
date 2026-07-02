@@ -5,11 +5,12 @@ Main FastAPI application with integrated admin panel
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.openapi.docs import get_redoc_html
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 import secrets
 import os
 
@@ -25,6 +26,7 @@ from app.api.v1 import api_router as v1_api_router
 from app.api.v2 import api_router
 from app.api.v2.questions import router as questions_router
 from app.api.mcp.router import router as mcp_router
+from app.api.integration import router as integration_router
 
 
 # Session storage for admin panel (in production, use Redis or database)
@@ -56,9 +58,19 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     docs_url="/api/docs",  # Changed from settings.docs_url
-    redoc_url="/api/redoc",  # Changed from settings.redoc_url
+    redoc_url=None,  # Custom route below uses stable redoc@2 CDN
     lifespan=lifespan
 )
+
+
+@app.get("/api/redoc", include_in_schema=False)
+async def redoc_html(request: Request) -> HTMLResponse:
+    root_path = request.scope.get("root_path", "").rstrip("/")
+    return get_redoc_html(
+        openapi_url=f"{root_path}{app.openapi_url}",
+        title=f"{settings.app_name} - ReDoc",
+        redoc_js_url="https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js",
+    )
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -84,6 +96,9 @@ app.include_router(questions_router, prefix="/api/v2")
 
 # Include MCP routes
 app.include_router(mcp_router, prefix="/api/mcp")
+
+# Integration API (API Key auth)
+app.include_router(integration_router, prefix="/api/integration")
 
 
 # Admin authentication helper
@@ -565,6 +580,118 @@ async def admin_activation_codes(
         "request": request,
         "banks": banks,
         "current_user": current_admin
+    })
+
+
+@app.get("/admin/api-keys", response_class=HTMLResponse, tags=["🔌 Admin - Integration API"])
+async def admin_api_keys(
+    request: Request,
+    current_admin=Depends(admin_required),
+    main_db: Session = Depends(get_main_db),
+):
+    """Integration API Key management page"""
+    from app.models.integration_models import IntegrationApiKey
+    from app.schemas.integration_schemas import INTEGRATION_SCOPES
+
+    api_keys = main_db.query(IntegrationApiKey).order_by(
+        IntegrationApiKey.created_at.desc()
+    ).all()
+    users = main_db.query(User).filter(User.is_active == True).order_by(User.username).all()
+
+    return templates.TemplateResponse("admin/api_keys.html", {
+        "request": request,
+        "current_user": current_admin,
+        "api_keys": api_keys,
+        "users": users,
+        "scopes": INTEGRATION_SCOPES,
+        "new_api_key": request.query_params.get("new_key"),
+    })
+
+
+@app.post("/admin/api-keys/create", tags=["🔌 Admin - Integration API"])
+async def admin_api_keys_create(
+    request: Request,
+    current_admin=Depends(admin_required),
+    main_db: Session = Depends(get_main_db),
+    qbank_db: Session = Depends(get_qbank_db),
+):
+    """Create a new Integration API Key"""
+    from app.schemas.integration_schemas import ApiKeyCreateRequest
+    from app.services.integration_service import IntegrationService
+
+    form = await request.form()
+    name = form.get("name")
+    if not name:
+        raise HTTPException(status_code=400, detail="名称不能为空")
+
+    scopes = form.getlist("scopes")
+    allowed_bank_ids = form.get("allowed_bank_ids") or ""
+    ip_whitelist = form.get("ip_whitelist") or ""
+    rate_limit_per_minute = int(form.get("rate_limit_per_minute") or 120)
+    owner_user_id = form.get("owner_user_id") or ""
+
+    bank_ids = [b.strip() for b in allowed_bank_ids.split(",") if b.strip()] or None
+    ips = [ip.strip() for ip in ip_whitelist.split(",") if ip.strip()] or None
+    owner_id = int(owner_user_id) if str(owner_user_id).strip() else current_admin["id"]
+
+    if not scopes:
+        scopes = ["bank:read", "bank:write", "question:read", "question:write", "question:import"]
+
+    data = ApiKeyCreateRequest(
+        name=name,
+        scopes=scopes,
+        allowed_bank_ids=bank_ids,
+        ip_whitelist=ips,
+        rate_limit_per_minute=rate_limit_per_minute,
+        owner_user_id=owner_id,
+    )
+    svc = IntegrationService(main_db, qbank_db)
+    _, raw_key = svc.create_api_key(data, created_by=current_admin["id"])
+
+    from urllib.parse import quote
+    return RedirectResponse(
+        url=f"/admin/api-keys?new_key={quote(raw_key)}",
+        status_code=303,
+    )
+
+
+@app.post("/admin/api-keys/{key_id}/revoke", tags=["🔌 Admin - Integration API"])
+async def admin_api_keys_revoke(
+    key_id: str,
+    current_admin=Depends(admin_required),
+    main_db: Session = Depends(get_main_db),
+    qbank_db: Session = Depends(get_qbank_db),
+):
+    """Revoke an Integration API Key"""
+    from app.services.integration_service import IntegrationService
+
+    IntegrationService(main_db, qbank_db).revoke_api_key(key_id)
+    return RedirectResponse(url="/admin/api-keys", status_code=303)
+
+
+@app.get("/admin/api-keys/{key_id}/logs", response_class=HTMLResponse, tags=["🔌 Admin - Integration API"])
+async def admin_api_key_logs(
+    request: Request,
+    key_id: str,
+    current_admin=Depends(admin_required),
+    main_db: Session = Depends(get_main_db),
+):
+    """View audit logs for an API Key"""
+    from app.models.integration_models import IntegrationApiKey, IntegrationAuditLog
+
+    api_key = main_db.query(IntegrationApiKey).filter(IntegrationApiKey.id == key_id).first()
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API Key not found")
+
+    logs = main_db.query(IntegrationAuditLog).filter(
+        IntegrationAuditLog.api_key_id == key_id
+    ).order_by(IntegrationAuditLog.created_at.desc()).limit(200).all()
+
+    return templates.TemplateResponse("admin/api_key_logs.html", {
+        "request": request,
+        "current_user": current_admin,
+        "api_key": api_key,
+        "logs": logs,
     })
 
 
