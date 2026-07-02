@@ -35,6 +35,7 @@ backend/
 ├── databases/           # SQLite databases
 ├── storage/             # File storage
 ├── init_admin.py        # Create admin user (run once after first start)
+├── scripts/legacy/      # 历史数据修复脚本（正常部署无需运行）
 ├── run.py               # Application entry point
 └── requirements.txt
 ```

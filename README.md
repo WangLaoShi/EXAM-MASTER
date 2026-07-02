@@ -192,6 +192,7 @@ backend/
 ├── requirements.txt           # Python依赖
 ├── init_admin.py              # 管理员初始化脚本（首次部署运行）
 ├── init_database_v2.py        # 历史脚本，当前应用不使用，无需运行
+├── scripts/legacy/            # 历史数据修复脚本（见 scripts/legacy/README.md）
 └── run.py                     # 应用启动脚本
 ```
 

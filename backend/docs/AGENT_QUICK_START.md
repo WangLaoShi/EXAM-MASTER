@@ -6,7 +6,7 @@
 
 ```bash
 cd /Users/shaynechen/shayne/demo/EXAM-MASTER/backend
-sqlite3 databases/main.db < add_agent_fields_migration.sql
+sqlite3 databases/main.db < scripts/legacy/sql/add_agent_fields_migration.sql
 ```
 
 ### 第二步：测试Agent功能

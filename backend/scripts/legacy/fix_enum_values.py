@@ -6,8 +6,9 @@ Fix enum values in database - Remove 'QuestionType.' prefix
 import sys
 import os
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add backend root to path
+BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, BACKEND_ROOT)
 
 from sqlalchemy import create_engine, text
 from app.core.config import settings

@@ -57,7 +57,7 @@ http://localhost:8000/admin/agent-test
 - `templates/admin/agent_test.html` - Web测试界面
 - `docs/AGENT_SYSTEM.md` - 本文档
 - `test_agent.py` - 命令行测试脚本
-- `add_agent_fields_migration.sql` - 数据库迁移
+- `scripts/legacy/sql/add_agent_fields_migration.sql` - 数据库迁移（仅升级旧库时需要）
 
 ### 修改文件
 - `app/main.py` - 添加MCP路由和Agent测试路由
