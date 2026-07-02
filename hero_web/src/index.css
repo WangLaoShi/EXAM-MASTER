@@ -1,0 +1,24 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+@import 'katex/dist/katex.min.css';
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background, #f4f4f5);
+}
+
+.prose-question {
+  line-height: 1.7;
+}
+
+.prose-question img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
