@@ -35,7 +35,10 @@ SAMPLE_ZIP = BACKEND_DIR / "sample_questions.zip"
 LARGE_CSV = BACKEND_DIR / "questions.csv"
 LARGE_ZIP = BACKEND_DIR / "questions.zip"
 
-pytestmark = pytest.mark.skipif(not API_KEY, reason="请设置环境变量 INTEGRATION_API_KEY")
+pytestmark = [
+    pytest.mark.live,
+    pytest.mark.skipif(not API_KEY, reason="请设置环境变量 INTEGRATION_API_KEY"),
+]
 
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 JSON_HEADERS = {**HEADERS, "Content-Type": "application/json"}
@@ -125,11 +128,11 @@ def bank_id():
         "category": "integration-test",
         "is_public": False,
     }
-    r = _post("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
+    r = _post("/api/integration/banks", json=payload, headers=JSON_HEADERS, timeout=30)
     assert r.status_code == 201, f"创建题库失败: {r.status_code} {r.text}"
     bid = r.json()["id"]
     yield bid
-    _delete(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=30)
+    _delete(f"/api/integration/banks/{bid}", headers=HEADERS, timeout=30)
 
 
 @pytest.fixture(scope="module")
@@ -141,18 +144,18 @@ def large_bank_id():
         "category": "integration-test-large",
         "is_public": False,
     }
-    r = _post("/api/integration/banks"), json=payload, headers=JSON_HEADERS, timeout=30)
+    r = _post("/api/integration/banks", json=payload, headers=JSON_HEADERS, timeout=30)
     assert r.status_code == 201, r.text
     bid = r.json()["id"]
     yield bid
-    _delete(f"/api/integration/banks/{bid}"), headers=HEADERS, timeout=120)
+    _delete(f"/api/integration/banks/{bid}", headers=HEADERS, timeout=120)
 
 
 class TestIntegrationHealth:
     """TC-01: API Key 认证与健康检查"""
 
     def test_health_with_bearer(self):
-        r = _get("/api/integration/health"), headers=HEADERS, timeout=10)
+        r = _get("/api/integration/health", headers=HEADERS, timeout=10)
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "ok"
@@ -296,14 +299,14 @@ class TestIntegrationBanks:
     """TC-02 ~ TC-06: 题库 CRUD"""
 
     def test_list_banks(self, bank_id):
-        r = _get("/api/integration/banks"), headers=HEADERS, timeout=10)
+        r = _get("/api/integration/banks", headers=HEADERS, timeout=10)
         assert r.status_code == 200
         banks = r.json()
         assert isinstance(banks, list)
         assert any(b["id"] == bank_id for b in banks)
 
     def test_get_bank(self, bank_id):
-        r = _get(f"/api/integration/banks/{bank_id}"), headers=HEADERS, timeout=10)
+        r = _get(f"/api/integration/banks/{bank_id}", headers=HEADERS, timeout=10)
         assert r.status_code == 200
         assert r.json()["id"] == bank_id
         assert "Integration API" in r.json()["name"]

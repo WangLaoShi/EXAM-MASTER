@@ -115,6 +115,15 @@ python run.py
 
 服务默认地址：`http://localhost:8000`
 
+> **Windows 注意**：`run.py` 使用 `reload=True`，异常退出后可能留下**孤儿 uvicorn 子进程**，导致请求仍打到旧代码（例如 `GET /api/v2/qbank/banks` 500）。  
+> 重启前先结束占用 8000 端口的进程：
+> ```powershell
+> Get-CimInstance Win32_Process -Filter "name='python.exe'" |
+>   Where-Object { $_.CommandLine -match 'uvicorn|multiprocessing-fork|run\.py' } |
+>   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+> ```
+> 或不用 reload：`python -m uvicorn app.main:app --host 0.0.0.0 --port 8000`
+
 ## Access Points
 
 - Admin Panel: `http://localhost:8000/admin`
@@ -154,9 +163,16 @@ python run.py
 
 ### Running Tests
 
+#### GitHub CI（自动）
+
+每次向 `main` / `dev_2.0` 推送或提交 PR（修改 `backend/`）时，GitHub Actions 会运行 `tests/test_ci_smoke.py`（约 50+ 条进程内用例：健康检查、OpenAPI、JWT 登录、题库序列化、逐条 public 接口）。
+
+Live 测试（`@pytest.mark.live`）与慢速测试（`@pytest.mark.slow`）**不在 CI 中运行**，需在本地手动执行。
+
 #### 进程内（无需启动服务）
 
 ```bash
+pytest tests/test_ci_smoke.py -v
 pytest tests/test_all_apis.py -q
 pytest tests/test_all_apis.py::TestOpenAPIDocumentInProcess -v
 ```

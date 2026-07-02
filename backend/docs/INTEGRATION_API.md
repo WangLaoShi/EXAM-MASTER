@@ -515,6 +515,10 @@ A: 必须为 `file`。
 
 公共工具：`tests/api_timing.py`（耗时上限）、`tests/openapi_client.py`（OpenAPI 解析）
 
+### GitHub CI（自动）
+
+向 `main` / `dev_2.0` 推送或 PR 时，Actions 运行 `tests/test_ci_smoke.py`（进程内，约 53 条）。Live 测试（`@pytest.mark.live`）与慢速测试（`@pytest.mark.slow`）仅本地执行。
+
 ### Integration 专项
 
 数据文件：

@@ -121,7 +121,10 @@ def _record_result(request: pytest.FixtureRequest, result) -> None:
     request.node.user_properties.append(("operation", result.operation.display_name))
 
 
-pytestmark = pytest.mark.skipif(not _server_up(), reason=f"服务未启动: {BASE_URL}")
+pytestmark = [
+    pytest.mark.live,
+    pytest.mark.skipif(not _server_up(), reason=f"服务未启动: {BASE_URL}"),
+]
 
 
 @pytest.fixture(scope="module")
