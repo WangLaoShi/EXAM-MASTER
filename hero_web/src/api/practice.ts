@@ -3,9 +3,17 @@ import type { PracticeQuestion } from '@/types/question'
 import type {
   AnswerResult,
   CreateSessionPayload,
+  PracticeModePreview,
   PracticeSession,
   SessionStatistics,
 } from '@/types/practice'
+
+export async function fetchPracticeModePreview(bankId: string): Promise<PracticeModePreview> {
+  const { data } = await apiClient.get<PracticeModePreview>('/practice/modes/preview', {
+    params: { bank_id: bankId },
+  })
+  return data
+}
 
 export async function createPracticeSession(
   payload: CreateSessionPayload,

@@ -36,6 +36,16 @@ class PracticeSessionCreate(BaseModel):
     difficulty: Optional[str] = Field(None, description="难度筛选 easy/medium/hard/expert")
 
 
+class PracticeModePreviewResponse(BaseModel):
+    """各练习模式可用题量预览"""
+    bank_id: str
+    sequential: int = Field(description="顺序/随机模式可用题量")
+    random: int = Field(description="随机模式可用题量")
+    wrong_only: int = Field(description="错题专练可用题量")
+    favorite_only: int = Field(description="收藏专练可用题量")
+    unpracticed: int = Field(description="未做题可用题量")
+
+
 class PracticeSessionUpdate(BaseModel):
     """更新答题会话进度"""
     current_index: Optional[int] = Field(None, description="当前题目索引")

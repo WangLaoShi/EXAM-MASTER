@@ -2,7 +2,7 @@ import { apiClient } from '@/api/client'
 import type { QuestionBank } from '@/types/question'
 
 export async function fetchQuestionBanks(): Promise<QuestionBank[]> {
-  const { data } = await apiClient.get<QuestionBank[]>('/qbank/banks')
+  const { data } = await apiClient.get<QuestionBank[]>('/qbank/banks/')
   return data
 }
 

@@ -42,6 +42,8 @@ backend/
 
 ## Installation
 
+完整安装、Web 发布与 **Docker 一键部署**见 **[docs/guides/INSTALLATION_AND_DEPLOYMENT.md](../docs/guides/INSTALLATION_AND_DEPLOYMENT.md)**。
+
 ### Requirements
 
 - Python **3.11.9**（见 `.python-version`）
@@ -115,8 +117,9 @@ python run.py
 
 服务默认地址：`http://localhost:8000`
 
-> **Windows 注意**：`run.py` 使用 `reload=True`，异常退出后可能留下**孤儿 uvicorn 子进程**，导致请求仍打到旧代码（例如 `GET /api/v2/qbank/banks` 500）。  
-> 重启前先结束占用 8000 端口的进程：
+`run.py` 在启动前会**自动检测并释放 8000 端口**（Windows 使用 `taskkill /F /T`，Unix 先 `SIGTERM` 再 `SIGKILL`）。若端口仍被占用会打印警告。
+
+> **Windows 补充**：`reload=True` 异常退出时仍可能留下孤儿 uvicorn 子进程。除重新执行 `python run.py` 外，也可手动结束占用进程：
 > ```powershell
 > Get-CimInstance Win32_Process -Filter "name='python.exe'" |
 >   Where-Object { $_.CommandLine -match 'uvicorn|multiprocessing-fork|run\.py' } |
@@ -181,7 +184,7 @@ python run.py
 
 热重载开发：`hero_web\scripts\run_dev.ps1`（Vite `127.0.0.1:5173`，API 代理到后端 8000）。
 
-详细说明见 **[hero_web/README.md](../hero_web/README.md)**。
+详细说明见 **[hero_web/README.md](../hero_web/README.md)**；练习模式与 API 见 **[docs/PRACTICE_MODES.md](docs/PRACTICE_MODES.md)**。
 
 ## API Endpoints
 
@@ -210,6 +213,17 @@ python run.py
 - `PUT /api/v1/qbank/questions/{id}` - Update question
 - `DELETE /api/v1/qbank/questions/{id}` - Delete question
 
+### Practice（练习会话）
+
+五种模式：`sequential` | `random` | `wrong_only` | `favorite_only` | `unpracticed`
+
+- `GET /api/v1/practice/modes/preview?bank_id=` - 各模式可用题量预览
+- `POST /api/v1/practice/sessions?resume_if_exists=` - 创建/恢复会话
+- `GET /api/v1/practice/sessions/{id}/current` - 当前题目（含进度）
+- `POST /api/v1/practice/sessions/{id}/submit` - 提交答案
+
+详见 **[docs/PRACTICE_MODES.md](docs/PRACTICE_MODES.md)**。
+
 ## Development
 
 ### Running Tests
@@ -224,9 +238,19 @@ Live 测试（`@pytest.mark.live`）与慢速测试（`@pytest.mark.slow`）**�
 
 ```bash
 pytest tests/test_ci_smoke.py -v
+pytest tests/test_practice_modes.py -v      # 五种练习模式 + 预览 API
+pytest tests/test_composite_question.py -v  # 复合题判分/脱敏
 pytest tests/test_all_apis.py -q
 pytest tests/test_all_apis.py::TestOpenAPIDocumentInProcess -v
 ```
+
+#### Live：练习模式冒烟（需先 `python run.py`）
+
+```powershell
+python test_practice_api.py
+```
+
+覆盖：登录、模式预览、五种模式创建会话、顺序练习答题流程。
 
 #### Live：全接口 OpenAPI 冒烟（需先 `python run.py`）
 

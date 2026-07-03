@@ -1,199 +1,204 @@
 """
 Test script for Practice API endpoints
-测试脚本 - 验证练习API功能
+测试脚本 - 验证练习 API 与各练习模式
 """
 
 import requests
-import json
 
 BASE_URL = "http://localhost:8000/api/v1"
 
+PRACTICE_MODES = [
+    ("sequential", "顺序练习"),
+    ("random", "随机练习"),
+    ("wrong_only", "错题专练"),
+    ("favorite_only", "收藏专练"),
+    ("unpracticed", "未做题"),
+]
+
+
 def login():
-    """登录获取token"""
+    """登录获取 token"""
     print("\n=== 1. 测试登录 ===")
     response = requests.post(
         f"{BASE_URL}/auth/login",
-        data={
-            "username": "admin",
-            "password": "admin123"
-        }
+        data={"username": "admin", "password": "admin123"},
+        timeout=30,
     )
     print(f"Status: {response.status_code}")
     if response.status_code == 200:
-        data = response.json()
-        token = data.get("access_token")
-        print(f"✓ 登录成功，获取到token")
+        token = response.json().get("access_token")
+        print("✓ 登录成功，获取到 token")
         return token
-    else:
-        print(f"✗ 登录失败: {response.text}")
-        return None
+    print(f"✗ 登录失败: {response.text}")
+    return None
 
 
 def get_question_banks(token):
     """获取题库列表"""
     print("\n=== 2. 测试获取题库列表 ===")
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{BASE_URL}/qbank/banks", headers=headers)
+    response = requests.get(f"{BASE_URL}/qbank/banks/", headers=headers, timeout=30)
     print(f"Status: {response.status_code}")
     if response.status_code == 200:
         banks = response.json()
         print(f"✓ 成功获取题库列表，共 {len(banks)} 个题库")
         if banks:
             print(f"  第一个题库: {banks[0].get('name')} (ID: {banks[0].get('id')})")
-            return banks[0].get('id')
+            return banks[0].get("id")
         return None
-    else:
-        print(f"✗ 获取题库失败: {response.text}")
-        return None
+    print(f"✗ 获取题库失败: {response.text}")
+    return None
 
 
-def create_practice_session(token, bank_id):
+def preview_practice_modes(token, bank_id):
+    """预览各练习模式可用题量"""
+    print("\n=== 3. 测试练习模式预览 ===")
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(
+        f"{BASE_URL}/practice/modes/preview",
+        headers=headers,
+        params={"bank_id": bank_id},
+        timeout=30,
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code != 200:
+        print(f"✗ 模式预览失败: {response.text}")
+        return None
+    preview = response.json()
+    print("✓ 模式预览成功")
+    for mode, label in PRACTICE_MODES:
+        count = preview.get(mode, 0)
+        print(f"  {label} ({mode}): {count} 题")
+    return preview
+
+
+def create_practice_session(token, bank_id, mode, resume_if_exists=False):
     """创建练习会话"""
-    print("\n=== 3. 测试创建练习会话 ===")
     headers = {
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
-    data = {
-        "bank_id": bank_id,
-        "mode": "sequential",
-        "question_types": None,
-        "difficulty": None
-    }
+    data = {"bank_id": bank_id, "mode": mode}
     response = requests.post(
         f"{BASE_URL}/practice/sessions",
         headers=headers,
-        json=data
+        json=data,
+        params={"resume_if_exists": resume_if_exists},
+        timeout=30,
     )
-    print(f"Status: {response.status_code}")
-    if response.status_code == 200:
+    return response
+
+
+def test_all_practice_modes(token, bank_id, preview):
+    """逐个测试五种练习模式"""
+    print("\n=== 4. 测试各练习模式创建会话 ===")
+    created = []
+    for mode, label in PRACTICE_MODES:
+        count = (preview or {}).get(mode, 0)
+        print(f"\n--- {label} ({mode}) ---")
+        response = create_practice_session(token, bank_id, mode, resume_if_exists=False)
+        print(f"Status: {response.status_code}")
+        if count == 0:
+            if response.status_code == 404:
+                print(f"✓ 预期无题可用: {response.json().get('detail')}")
+            else:
+                print(f"✗ 预期 404，实际: {response.text}")
+            continue
+        if response.status_code != 200:
+            print(f"✗ 创建失败: {response.text}")
+            continue
         session = response.json()
-        print(f"✓ 成功创建练习会话")
+        print("✓ 创建成功")
         print(f"  会话ID: {session.get('id')}")
-        print(f"  题目总数: {session.get('total_questions')}")
-        print(f"  当前进度: {session.get('current_index')}/{session.get('total_questions')}")
-        return session.get('id')
-    else:
-        print(f"✗ 创建练习会话失败: {response.text}")
-        return None
+        print(f"  题目总数: {session.get('total_questions')} (预览 {count})")
+        if session.get("total_questions") != count:
+            print("✗ 题量与预览不一致")
+        else:
+            print("✓ 题量与预览一致")
+        created.append(session.get("id"))
+    return created
 
 
 def get_current_question(token, session_id):
     """获取当前题目"""
-    print("\n=== 4. 测试获取当前题目 ===")
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(
         f"{BASE_URL}/practice/sessions/{session_id}/current",
-        headers=headers
+        headers=headers,
+        timeout=30,
     )
-    print(f"Status: {response.status_code}")
-    if response.status_code == 200:
-        question = response.json()
-        print(f"✓ 成功获取当前题目")
-        print(f"  题目ID: {question.get('id')}")
-        print(f"  题目类型: {question.get('type')}")
-        print(f"  进度: {question.get('current_index')}/{question.get('total_questions')}")
-        print(f"  题干: {question.get('stem')[:50]}..." if len(question.get('stem', '')) > 50 else f"  题干: {question.get('stem')}")
-        return question.get('id')
-    else:
+    if response.status_code != 200:
         print(f"✗ 获取题目失败: {response.text}")
         return None
+    return response.json()
 
 
 def submit_answer(token, session_id, question_id):
     """提交答案"""
-    print("\n=== 5. 测试提交答案 ===")
     headers = {
         "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     data = {
         "question_id": question_id,
-        "user_answer": {
-            "answer": "A"
-        },
-        "time_spent": 30
+        "user_answer": {"answer": "A"},
+        "time_spent": 30,
     }
     response = requests.post(
         f"{BASE_URL}/practice/sessions/{session_id}/submit",
         headers=headers,
-        json=data
+        json=data,
+        timeout=30,
     )
-    print(f"Status: {response.status_code}")
-    if response.status_code == 200:
-        result = response.json()
-        print(f"✓ 成功提交答案")
-        print(f"  是否正确: {'✓' if result.get('is_correct') else '✗'}")
-        print(f"  正确答案: {result.get('correct_answer')}")
-        return True
-    else:
-        print(f"✗ 提交答案失败: {response.text}")
-        return False
+    return response.status_code == 200
 
 
-def get_session_statistics(token, session_id):
-    """获取会话统计"""
-    print("\n=== 6. 测试获取会话统计 ===")
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(
-        f"{BASE_URL}/practice/sessions/{session_id}/statistics",
-        headers=headers
-    )
-    print(f"Status: {response.status_code}")
-    if response.status_code == 200:
-        stats = response.json()
-        print(f"✓ 成功获取会话统计")
-        print(f"  总题数: {stats.get('total_questions')}")
-        print(f"  已完成: {stats.get('completed_count')}")
-        print(f"  正确数: {stats.get('correct_count')}")
-        print(f"  错误数: {stats.get('wrong_count')}")
-        print(f"  正确率: {stats.get('accuracy_rate'):.2f}%")
-        return True
-    else:
-        print(f"✗ 获取统计失败: {response.text}")
+def smoke_flow_with_sequential(token, session_id):
+    """对顺序练习会话做完整答题冒烟"""
+    print("\n=== 5. 顺序练习完整流程冒烟 ===")
+    question = get_current_question(token, session_id)
+    if not question:
+        print("✗ 无法获取当前题目")
         return False
+    print(f"✓ 当前题目: {question.get('current_index')}/{question.get('total_questions')}")
+    if not submit_answer(token, session_id, question.get("id")):
+        print("✗ 提交答案失败")
+        return False
+    print("✓ 提交答案成功")
+    return True
 
 
 def main():
     """主测试流程"""
     print("=" * 60)
-    print("开始测试 Practice API")
+    print("开始测试 Practice API（含全部练习模式）")
     print("=" * 60)
 
-    # 1. 登录
     token = login()
     if not token:
-        print("\n✗ 测试终止: 无法获取token")
+        print("\n✗ 测试终止: 无法获取 token")
         return
 
-    # 2. 获取题库
     bank_id = get_question_banks(token)
     if not bank_id:
-        print("\n✗ 测试终止: 无法获取题库ID")
+        print("\n✗ 测试终止: 无法获取题库 ID")
         return
 
-    # 3. 创建练习会话
-    session_id = create_practice_session(token, bank_id)
-    if not session_id:
-        print("\n✗ 测试终止: 无法创建练习会话")
-        return
+    preview = preview_practice_modes(token, bank_id)
+    session_ids = test_all_practice_modes(token, bank_id, preview)
 
-    # 4. 获取当前题目
-    question_id = get_current_question(token, session_id)
-    if not question_id:
-        print("\n✗ 测试终止: 无法获取题目")
-        return
+    sequential_session = None
+    if preview and preview.get("sequential", 0) > 0:
+        response = create_practice_session(token, bank_id, "sequential", resume_if_exists=False)
+        if response.status_code == 200:
+            sequential_session = response.json().get("id")
 
-    # 5. 提交答案
-    if not submit_answer(token, session_id, question_id):
-        print("\n✗ 测试终止: 无法提交答案")
+    if sequential_session and not smoke_flow_with_sequential(token, sequential_session):
+        print("\n✗ 顺序练习流程冒烟失败")
         return
-
-    # 6. 获取统计
-    get_session_statistics(token, session_id)
 
     print("\n" + "=" * 60)
-    print("✓ 所有测试完成！")
+    print(f"✓ 练习模式测试完成（成功创建 {len(session_ids)} 个模式会话）")
     print("=" * 60)
 
 

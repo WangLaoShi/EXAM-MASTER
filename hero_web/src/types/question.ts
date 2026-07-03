@@ -17,6 +17,7 @@ export interface QuestionBank {
   name: string
   description?: string | null
   question_count?: number
+  total_questions?: number
   category?: string | null
   is_public?: boolean
   created_at?: string

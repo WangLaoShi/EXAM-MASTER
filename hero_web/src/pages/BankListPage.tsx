@@ -39,7 +39,7 @@ export function BankListPage() {
               </Card.Header>
               <Card.Content>
                 <p className="text-sm text-default-500">
-                  题目数量：{bank.question_count ?? '—'}
+                  题目数量：{bank.question_count ?? bank.total_questions ?? '—'}
                 </p>
               </Card.Content>
             </Card>

@@ -1,0 +1,31 @@
+# EXAM-MASTER 一键部署（新机器仅需 Docker + Docker Compose）
+# 使用说明：docs/guides/INSTALLATION_AND_DEPLOYMENT.md
+
+services:
+  exam-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: exam-master:latest
+    container_name: exam-master
+    restart: unless-stopped
+    ports:
+      - "${EXAM_MASTER_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      DEBUG: "false"
+    volumes:
+      # 持久化：数据库与上传文件
+      - exam-databases:/app/databases
+      - exam-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+
+volumes:
+  exam-databases:
+  exam-storage:

@@ -61,3 +61,12 @@ export interface CreateSessionPayload {
   question_types?: string[]
   difficulty?: string
 }
+
+export interface PracticeModePreview {
+  bank_id: string
+  sequential: number
+  random: number
+  wrong_only: number
+  favorite_only: number
+  unpracticed: number
+}

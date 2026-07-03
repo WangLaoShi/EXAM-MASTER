@@ -32,13 +32,52 @@ from app.schemas.practice_schemas import (
     UserAnswerRecordResponse,
     AnswerHistoryResponse,
     PracticeQuestionWithProgress,
-    SessionStatistics
+    SessionStatistics,
+    PracticeModePreviewResponse,
 )
 
 router = APIRouter()
 
 
 # ==================== Helper Functions ====================
+
+def _enum_or_str(value):
+    if value is None:
+        return None
+    if hasattr(value, "value"):
+        return value.value
+    return value
+
+
+def _serialize_question_options(question) -> Optional[List[Dict[str, Any]]]:
+    if not question.options:
+        return None
+    return [
+        {
+            "label": opt.option_label,
+            "content": opt.option_content,
+            "is_correct": opt.is_correct,
+        }
+        for opt in question.options
+    ]
+
+
+def _coerce_practice_mode(mode) -> PracticeMode:
+    if isinstance(mode, PracticeMode):
+        return mode
+    if hasattr(mode, "value"):
+        return PracticeMode(mode.value)
+    return PracticeMode(mode)
+
+
+def _empty_mode_message(mode: PracticeMode) -> str:
+    messages = {
+        PracticeMode.wrong_only: "当前题库暂无错题，请先练习并答错后再使用错题专练",
+        PracticeMode.favorite_only: "当前题库暂无收藏题目，请先在练习中收藏题目",
+        PracticeMode.unpracticed: "当前题库所有题目都已练习过",
+    }
+    return messages.get(mode, "没有找到符合条件的题目")
+
 
 def check_bank_access(main_db: Session, qbank_db: Session, user: User, bank_id: str) -> bool:
     """检查用户是否有权限访问题库"""
@@ -181,6 +220,7 @@ def get_question_ids_for_session(
     difficulty: Optional[str] = None
 ) -> List[str]:
     """根据模式和筛选条件获取题目ID列表"""
+    mode = _coerce_practice_mode(mode)
 
     import logging
     logger = logging.getLogger(__name__)
@@ -261,6 +301,36 @@ def get_question_ids_for_session(
     return question_ids
 
 
+@router.get("/modes/preview", response_model=PracticeModePreviewResponse, tags=["📝 Practice"])
+async def preview_practice_modes(
+    bank_id: str = Query(..., description="题库ID"),
+    current_user: User = Depends(get_current_user),
+    qbank_db: Session = Depends(get_qbank_db),
+    main_db: Session = Depends(get_main_db),
+):
+    """预览各练习模式在本题库下可用的题目数量"""
+    if not check_bank_access(main_db, qbank_db, current_user, bank_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="您没有访问该题库的权限",
+        )
+
+    total = get_question_ids_for_session(qbank_db, bank_id, current_user.id, PracticeMode.sequential)
+    wrong = get_question_ids_for_session(qbank_db, bank_id, current_user.id, PracticeMode.wrong_only)
+    favorite = get_question_ids_for_session(qbank_db, bank_id, current_user.id, PracticeMode.favorite_only)
+    unpracticed = get_question_ids_for_session(qbank_db, bank_id, current_user.id, PracticeMode.unpracticed)
+
+    count = len(total)
+    return PracticeModePreviewResponse(
+        bank_id=bank_id,
+        sequential=count,
+        random=count,
+        wrong_only=len(wrong),
+        favorite_only=len(favorite),
+        unpracticed=len(unpracticed),
+    )
+
+
 # ==================== Practice Session Endpoints ====================
 
 @router.post("/sessions", response_model=PracticeSessionResponse, tags=["📝 Practice"])
@@ -272,6 +342,7 @@ async def create_practice_session(
     main_db: Session = Depends(get_main_db)
 ):
     """创建答题会话"""
+    coerced_mode = _coerce_practice_mode(session_data.mode)
 
     # 检查题库访问权限
     if not check_bank_access(main_db, qbank_db, current_user, session_data.bank_id):
@@ -286,7 +357,7 @@ async def create_practice_session(
             and_(
                 PracticeSession.user_id == current_user.id,
                 PracticeSession.bank_id == session_data.bank_id,
-                PracticeSession.mode == session_data.mode,
+                PracticeSession.mode == coerced_mode,
                 PracticeSession.status.in_([SessionStatus.in_progress, SessionStatus.paused])
             )
         ).order_by(PracticeSession.last_activity_at.desc()).first()
@@ -304,7 +375,7 @@ async def create_practice_session(
         db=qbank_db,
         bank_id=session_data.bank_id,
         user_id=current_user.id,
-        mode=session_data.mode,
+        mode=coerced_mode,
         question_types=session_data.question_types,
         difficulty=session_data.difficulty
     )
@@ -312,7 +383,7 @@ async def create_practice_session(
     if not question_ids:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="没有找到符合条件的题目"
+            detail=_empty_mode_message(coerced_mode)
         )
 
     # 创建会话
@@ -320,7 +391,7 @@ async def create_practice_session(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
         bank_id=session_data.bank_id,
-        mode=session_data.mode,
+        mode=coerced_mode,
         question_types=session_data.question_types,
         difficulty=session_data.difficulty,
         total_questions=len(question_ids),
@@ -660,7 +731,7 @@ async def submit_answer(
         is_correct=is_correct,
         time_spent=answer_data.time_spent,
         question_snapshot={
-            "type": question.type.value,
+            "type": _enum_or_str(question.type),
             "stem": question.stem,
             "options": options_snapshot
         },
@@ -838,10 +909,10 @@ async def get_current_question(
     return PracticeQuestionWithProgress(
         id=question.id,
         bank_id=question.bank_id,
-        type=question.type.value,
+        type=_enum_or_str(question.type),
         stem=question.stem,
-        options=question.options,
-        difficulty=question.difficulty.value if question.difficulty else None,
+        options=_serialize_question_options(question),
+        difficulty=_enum_or_str(question.difficulty),
         tags=question.tags,
         has_image=getattr(question, "has_images", False) or getattr(question, "has_image", False),
         has_video=question.has_video or False,
