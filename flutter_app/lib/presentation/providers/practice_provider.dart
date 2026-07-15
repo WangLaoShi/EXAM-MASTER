@@ -9,8 +9,10 @@ import '../../data/models/answer_record_model.dart';
 import '../../data/models/favorite_model.dart';
 import '../../core/errors/failures.dart';
 
-/// Practice Provider
 /// 答题练习状态管理
+///
+/// 流程：createSession → 拉题列表 → submitAnswer（逐题）→ completeSession
+/// 依赖 [AuthProvider] 提供 userId；收藏切换走 [FavoritesRepository]。
 class PracticeProvider with ChangeNotifier {
   final PracticeRepository _repository;
   final QuestionBankRepository _questionBankRepository;

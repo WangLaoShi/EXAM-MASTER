@@ -3,8 +3,10 @@ import 'package:logger/logger.dart';
 import '../constants/api_constants.dart';
 import 'api_interceptor.dart';
 
-/// Dio Client
-/// 封装Dio HTTP客户端
+/// HTTP 客户端封装（Dio + 拦截器）
+///
+/// - [ApiInterceptor]：自动附加 Bearer Token（读 SharedPreferences），401 清 token
+/// - 异常在 Api 层转为 [AppException]，Repository 再转为 [Failure]
 class DioClient {
   late final Dio _dio;
   final Logger _logger = Logger();

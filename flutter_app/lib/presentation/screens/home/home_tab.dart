@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../routes/app_router.dart';
 import '../../providers/question_bank_provider.dart';
 import '../../../data/models/question_bank_model.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -239,7 +240,7 @@ class _HomeTabState extends State<HomeTab> {
                         onTap: () {
                           Navigator.pushNamed(
                             context,
-                            '/question-bank-detail',
+                            AppRoutes.questionBankDetail,
                             arguments: bank.id,
                           );
                         },

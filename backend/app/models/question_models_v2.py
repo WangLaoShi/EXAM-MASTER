@@ -235,6 +235,10 @@ class QuestionV2(BaseQBank):
                 }
             return {"reference_answer": "", "keywords": []}
 
+        elif self.type == QuestionType.composite:
+            from app.utils.composite_question import get_composite_correct_answer
+            return get_composite_correct_answer(self)
+
         return {}
 
 

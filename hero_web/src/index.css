@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+@import 'katex/dist/katex.min.css';
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background, #f4f4f5);
+}
+
+.prose-question {
+  line-height: 1.7;
+}
+
+.prose-question img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+/* 单选/多选：控件与选项文字同一行（覆盖 HeroUI 默认纵向布局） */
+[data-slot='checkbox'].choice-option,
+[data-slot='radio'].choice-option,
+.checkbox.choice-option,
+.radio.choice-option {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: flex-start !important;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+[data-slot='checkbox'].choice-option > [data-slot='checkbox-control'],
+[data-slot='radio'].choice-option > [data-slot='radio-control'],
+.checkbox.choice-option > .checkbox__control,
+.radio.choice-option > .radio__control,
+.choice-option-control {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+}
+
+[data-slot='checkbox'].choice-option > [data-slot='checkbox-content'],
+[data-slot='radio'].choice-option > [data-slot='radio-content'],
+.checkbox.choice-option > .checkbox__content,
+.radio.choice-option > .radio__content,
+label.choice-option-content {
+  display: flex !important;
+  flex-flow: row wrap !important;
+  align-items: baseline !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.25rem 0.5rem;
+  line-height: 1.6;
+}
+
+/* 选项内 Markdown 段落改为行内，避免换行到控件下方 */
+.choice-option-content .prose-question,
+.choice-option-content .prose-question--inline {
+  display: inline;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.choice-option-content .prose-question p,
+.choice-option-content .prose-question--inline p,
+.choice-option-content .prose-question li,
+.choice-option-content .prose-question--inline li {
+  display: inline;
+  margin: 0;
+}
+
+.choice-option-content .prose-question p:not(:last-child)::after,
+.choice-option-content .prose-question--inline p:not(:last-child)::after {
+  content: ' ';
+}
+
+.choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+/* 题号导航：三位数时不挤 */
+.question-nav-grid {
+  display: grid;
+  gap: 0.375rem;
+  grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+}
+
+.question-nav-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+}
+
+.question-nav-grid--collapsed {
+  max-height: 12rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.question-nav-grid--collapsed::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.5rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--color-content1, #fff));
+}
+
+.question-nav-btn {
+  aspect-ratio: 1;
+  min-height: 2.25rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.question-nav-btn--current {
+  box-shadow: 0 0 0 2px var(--color-primary, #006fee);
+}
+
+.question-nav-btn--3digit {
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.question-nav-btn--2digit {
+  font-size: 0.75rem;
+}
+
+.question-nav-btn--1digit {
+  font-size: 0.875rem;
+}
+
+/* 最高优先级：覆盖 HeroUI checkbox/radio 的 flex-col */
+html body [data-slot='checkbox'].choice-option,
+html body [data-slot='radio'].choice-option,
+html body .checkbox.choice-option,
+html body .radio.choice-option {
+  flex-direction: row !important;
+  align-items: flex-start !important;
+}

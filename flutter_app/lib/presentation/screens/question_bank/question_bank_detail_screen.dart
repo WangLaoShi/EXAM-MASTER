@@ -9,9 +9,11 @@ import '../../../data/repositories/statistics_repository.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/logger.dart';
+import '../../../routes/app_router.dart';
 
-/// Question Bank Detail Screen
-/// 题库详情页面
+/// 题库详情：统计卡片 + 五种学习入口（顺序/随机/错题/收藏/浏览）
+///
+/// 统计走 [StatisticsRepository]（本页内联 new DioClient，与全局 DI 分离，待统一）。
 class QuestionBankDetailScreen extends StatefulWidget {
   final String bankId;
 
@@ -267,7 +269,7 @@ class _QuestionBankDetailScreenState extends State<QuestionBankDetailScreen> {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/practice',
+                AppRoutes.practice,
                 arguments: {
                   'bankId': bank.id,
                   'mode': PracticeMode.sequential,
@@ -287,7 +289,7 @@ class _QuestionBankDetailScreenState extends State<QuestionBankDetailScreen> {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/practice',
+                AppRoutes.practice,
                 arguments: {
                   'bankId': bank.id,
                   'mode': PracticeMode.random,
@@ -307,7 +309,7 @@ class _QuestionBankDetailScreenState extends State<QuestionBankDetailScreen> {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/wrong-questions',
+                AppRoutes.wrongQuestions,
                 arguments: {
                   'bankId': bank.id,
                 },
@@ -326,7 +328,7 @@ class _QuestionBankDetailScreenState extends State<QuestionBankDetailScreen> {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/favorites',
+                AppRoutes.favorites,
                 arguments: {
                   'bankId': bank.id,
                 },
@@ -345,7 +347,7 @@ class _QuestionBankDetailScreenState extends State<QuestionBankDetailScreen> {
             onTap: () {
               Navigator.pushNamed(
                 context,
-                '/browse-questions',
+                AppRoutes.browseQuestions,
                 arguments: {
                   'bankId': bank.id,
                 },

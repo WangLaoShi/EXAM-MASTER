@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import '../../../routes/app_router.dart';
 import '../providers/auth_provider.dart';
 
 /// Splash Screen
@@ -29,9 +30,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Navigate based on auth state
     if (authProvider.isAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../routes/app_router.dart';
 import '../../providers/auth_provider.dart';
 
 /// Profile Tab
@@ -37,7 +38,7 @@ class ProfileTab extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       await context.read<AuthProvider>().logout();
       if (context.mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
       }
     }
   }
@@ -107,7 +108,7 @@ class ProfileTab extends StatelessWidget {
                 title: const Text('设置'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  Navigator.pushNamed(context, '/settings');
+                  Navigator.pushNamed(context, AppRoutes.settings);
                 },
               ),
               ListTile(

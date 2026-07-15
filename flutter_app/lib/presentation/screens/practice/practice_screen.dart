@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:card_swiper/card_swiper.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../providers/practice_provider.dart';
 import '../../../data/models/practice_session_model.dart';
 import '../../../data/models/question_model.dart';
@@ -34,9 +35,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initSession();
     });
-    // Auto-save progress every 30 seconds
+    // 定时持久化会话进度（pause → resume，不中断答题）
     _progressSaveTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      Duration(seconds: AppConstants.autoSaveInterval),
       (_) => _saveProgress(),
     );
   }
@@ -76,7 +77,8 @@ class _PracticeScreenState extends State<PracticeScreen> {
     provider.goToQuestion(index);
   }
 
-  /// Auto-save progress periodically
+  /// 定时保存：调用后端 pause/resume，把当前题号与已答状态写入会话。
+  /// 单题 submit 时已即时落库；此处是防崩溃/杀进程的兜底，失败静默忽略。
   Future<void> _saveProgress() async {
     if (!mounted || !_isInitialized) return;
 

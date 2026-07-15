@@ -3048,3 +3048,9 @@ WEB_APP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 # Mount Flutter Web static files
 if os.path.exists(WEB_APP_DIR):
     app.mount("/app-web", StaticFiles(directory=WEB_APP_DIR, html=True), name="flutter_web")
+
+# Serve Hero Web (React) app at /app-exam
+HERO_WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hero_web_app")
+
+if os.path.exists(HERO_WEB_DIR):
+    app.mount("/app-exam", StaticFiles(directory=HERO_WEB_DIR, html=True), name="hero_web")

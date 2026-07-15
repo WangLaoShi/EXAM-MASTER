@@ -96,7 +96,8 @@ GET    /stats/questions            - Question statistics
 
 ### Practice & Learning Sessions (`/api/v1/practice`)
 ```
-POST   /sessions                   - Create new practice session
+GET    /modes/preview              - Preview question counts per practice mode (query: bank_id)
+POST   /sessions                   - Create new practice session (query: resume_if_exists)
 GET    /sessions                   - List user's practice sessions
 GET    /sessions/{session_id}      - Get session details
 PUT    /sessions/{session_id}      - Update session (pause/resume)
@@ -269,10 +270,14 @@ order: string          - Sort order (asc, desc)
 
 ### Practice Specific
 ```
-mode: string           - Practice mode (sequential, random, wrong_only, favorite_only)
+bank_id: string        - Question bank UUID (preview endpoint)
+mode: string           - Practice mode: sequential | random | wrong_only | favorite_only | unpracticed
+resume_if_exists: bool - If true, resume in-progress session for same bank+mode (default false in Hero Web)
 question_types: array  - Question types to include
 difficulty: string     - Difficulty filter
 ```
+
+See **[PRACTICE_MODES.md](PRACTICE_MODES.md)** for mode semantics, preview response, and Hero Web behavior.
 
 ### Statistics Specific
 ```
@@ -308,33 +313,50 @@ Response (201):
 }
 ```
 
-### Example 2: Create Practice Session
+### Example 2: Preview Practice Modes
 ```http
-POST /api/v1/practice/sessions
+GET /api/v1/practice/modes/preview?bank_id=550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer {jwt_token}
+
+Response (200):
+{
+  "bank_id": "550e8400-e29b-41d4-a716-446655440000",
+  "sequential": 863,
+  "random": 863,
+  "wrong_only": 3,
+  "favorite_only": 1,
+  "unpracticed": 860
+}
+```
+
+### Example 3: Create Practice Session
+```http
+POST /api/v1/practice/sessions?resume_if_exists=false
 Authorization: Bearer {jwt_token}
 Content-Type: application/json
 
 {
   "bank_id": "550e8400-e29b-41d4-a716-446655440000",
   "mode": "random",
-  "question_types": ["single_choice", "multiple_choice"],
-  "difficulty": "medium"
+  "question_types": null,
+  "difficulty": null
 }
 
-Response (201):
+Response (200):
 {
   "id": "session-uuid",
   "user_id": 1,
   "bank_id": "550e8400-e29b-41d4-a716-446655440000",
   "mode": "random",
   "status": "in_progress",
-  "total_questions": 50,
-  "current_question_index": 0,
+  "total_questions": 863,
+  "current_index": 0,
+  "question_ids": ["..."],
   "created_at": "2025-01-01T12:00:00Z"
 }
 ```
 
-### Example 3: Submit Answer
+### Example 4: Submit Answer
 ```http
 POST /api/v1/practice/sessions/{session_id}/submit
 Authorization: Bearer {jwt_token}
@@ -342,17 +364,16 @@ Content-Type: application/json
 
 {
   "question_id": "q-uuid",
-  "selected_options": ["A", "B"],
-  "time_spent_seconds": 45
+  "user_answer": { "answers": ["A", "B"] },
+  "time_spent": 45
 }
 
 Response (200):
 {
   "is_correct": true,
-  "selected_options": ["A", "B"],
-  "correct_options": ["A", "B"],
-  "explanation": "Both options A and B are correct because...",
-  "points_earned": 10
+  "correct_answer": { "answers": ["A", "B"] },
+  "user_answer": { "answers": ["A", "B"] },
+  "explanation": "..."
 }
 ```
 
